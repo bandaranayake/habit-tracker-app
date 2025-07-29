@@ -11,8 +11,7 @@ declare global {
         habitId: number,
         current_streak: number,
         longest_streak: number,
-        completion_rate: number,
-        score: number
+        completion_rate: number
       ) => Promise<void>
       updateHabitLog: (habitId: number, date: string, state: number) => Promise<void>
       removeHabit: (habitId: number) => Promise<void>

@@ -69,19 +69,6 @@ export const getLongestStreak = (records: HabitLog[]): number => {
   return maxStreak
 }
 
-export const calculateHabitScore = (habit: Habit, logs: HabitLog[]): number => {
-  const daysMissed = logs.filter((log) => log.state === HABIT_STATUS_MISSED).length
-
-  const daysCompleted = logs.filter(
-    (log) => log.state === HABIT_STATUS_COMPLETED || log.state === HABIT_STATUS_SKIPPED
-  ).length
-
-  const adjustedWeight = calculateWeight(habit.weight, daysMissed)
-  const streakBonus = calculateStreakBonus(habit.current_streak)
-
-  return Math.round(daysCompleted * adjustedWeight * streakBonus * 100) / 100
-}
-
 export const calculateTotalScores = (habits: Habit[], logs: HabitLog[]): ChartData[] => {
   const chartData: ChartData[] = []
   const scoreMaps: ScoreMap[] = []
@@ -126,19 +113,17 @@ export const calculateTotalScores = (habits: Habit[], logs: HabitLog[]): ChartDa
       let streak = 0
       let misses = 0
 
-      if (habitLog.state === HABIT_STATUS_COMPLETED || habitLog.state === HABIT_STATUS_SKIPPED) {
+      if (habitLog.state === HABIT_STATUS_COMPLETED) {
         completed = previous.completed + 1
         misses = 0
+        streak = previous.streak + 1
+      } else if (habitLog.state === HABIT_STATUS_SKIPPED) {
+        completed = previous.completed + 1
+        misses = previous.misses
+        streak = previous.streak
       } else {
         completed = previous.completed
         misses = previous.misses + 1
-      }
-
-      if (habitLog.state === HABIT_STATUS_COMPLETED) {
-        streak = previous.streak + 1
-      } else if (habitLog.state === HABIT_STATUS_SKIPPED) {
-        streak = previous.streak
-      } else {
         streak = 0
       }
 

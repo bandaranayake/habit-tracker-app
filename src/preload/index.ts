@@ -8,17 +8,8 @@ contextBridge.exposeInMainWorld('habitAPI', {
     habitId: number,
     current_streak: number,
     longest_streak: number,
-    completion_rate: number,
-    score: number
-  ) =>
-    ipcRenderer.invoke(
-      'update-habit',
-      habitId,
-      current_streak,
-      longest_streak,
-      completion_rate,
-      score
-    ),
+    completion_rate: number
+  ) => ipcRenderer.invoke('update-habit', habitId, current_streak, longest_streak, completion_rate),
   updateHabitLog: (habitId: number, date: string, state: number) =>
     ipcRenderer.invoke('update-habit-log', habitId, date, state),
   removeHabit: (habitId: number) => ipcRenderer.invoke('remove-habit', habitId)

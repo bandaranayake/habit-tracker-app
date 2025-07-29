@@ -25,7 +25,6 @@ import { Habit } from './interfaces/habit'
 import { LoadingSpinner } from '@/components/ui/loadingSpinner'
 import {
   calculateCompletionRate,
-  calculateHabitScore,
   calculateStreak,
   calculateTotalScores,
   getLongestStreak
@@ -128,12 +127,11 @@ function App(): JSX.Element {
     const currentStreak = calculateStreak(updatedRecords)
     const longestStreak = getLongestStreak(updatedRecords)
     const completionRate = calculateCompletionRate(updatedRecords)
-    const score = calculateHabitScore(habit, updatedRecords)
 
     window.habitAPI
       .updateHabitLog(habitId, date, state)
       .then(() => {
-        window.habitAPI.updateHabit(habitId, currentStreak, longestStreak, completionRate, score)
+        window.habitAPI.updateHabit(habitId, currentStreak, longestStreak, completionRate)
       })
       .then(() => {
         setRecords((prevRecords) => {
@@ -148,8 +146,7 @@ function App(): JSX.Element {
                   ...habit,
                   current_streak: currentStreak,
                   longest_streak: longestStreak,
-                  completion_rate: completionRate,
-                  score: score
+                  completion_rate: completionRate
                 }
               : habit
           )

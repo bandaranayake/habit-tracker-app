@@ -17,7 +17,6 @@ export function initDatabase(dbPath: string): void {
     current_streak INTEGER DEFAULT 0,
     longest_streak INTEGER DEFAULT 0,
     completion_rate REAL DEFAULT 0.0,
-    score REAL DEFAULT 0.0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `
@@ -63,12 +62,11 @@ export function updateHabit(
   habitId: number,
   current_streak: number,
   longest_streak: number,
-  completion_rate: number,
-  score: number
+  completion_rate: number
 ): void {
   db.prepare(
-    `UPDATE habits SET current_streak = ?, longest_streak = ?, completion_rate = ?, score = ? WHERE id = ?`
-  ).run(current_streak, longest_streak, completion_rate, score, habitId)
+    `UPDATE habits SET current_streak = ?, longest_streak = ?, completion_rate = ? WHERE id = ?`
+  ).run(current_streak, longest_streak, completion_rate, habitId)
 }
 
 export function updateHabitLog(habitId: number, date: string, state: number): void {

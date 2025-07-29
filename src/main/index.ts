@@ -86,10 +86,9 @@ app.whenReady().then(() => {
       habitId: number,
       current_streak: number,
       longest_streak: number,
-      completion_rate: number,
-      score: number
+      completion_rate: number
     ) => {
-      return updateHabit(habitId, current_streak, longest_streak, completion_rate, score)
+      return updateHabit(habitId, current_streak, longest_streak, completion_rate)
     }
   )
 

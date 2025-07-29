@@ -18,8 +18,8 @@ export const HabitCard = ({
         <div className="flex gap-4 text-sm text-muted-foreground">
           <span>Current: {habit.current_streak} days</span>
           <span>Best: {habit.longest_streak} days</span>
-          <span>Score: {habit.score}</span>
           <span>Rate: {habit.completion_rate}%</span>
+          <span>Weight: {habit.weight}</span>
         </div>
       </div>
     </div>

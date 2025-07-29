@@ -6,6 +6,5 @@ export interface Habit {
   current_streak: number
   longest_streak: number
   completion_rate: number
-  score: number
   created_at: string
 }
