@@ -6,10 +6,17 @@ import {
   addHabit,
   getAllHabitLogs,
   getAllHabits,
+  initDatabase,
   removeHabit,
   updateHabit,
   updateHabitLog
 } from './db'
+
+if (is.dev) {
+  app.setPath('userData', join(app.getPath('appData'), app.name + '-dev'))
+} else {
+  app.setPath('userData', join(app.getPath('appData'), app.name))
+}
 
 function createWindow(): void {
   // Create the browser window.
@@ -25,8 +32,6 @@ function createWindow(): void {
       nodeIntegration: false
     }
   })
-
-  mainWindow.webContents.openDevTools()
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
@@ -59,6 +64,8 @@ app.whenReady().then(() => {
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
+
+  initDatabase(join(app.getPath('userData'), 'database.sqlite'))
 
   ipcMain.handle('get-all-habits', () => {
     return getAllHabits()

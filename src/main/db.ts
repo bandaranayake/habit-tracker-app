@@ -1,13 +1,13 @@
-import { app } from 'electron'
-import path from 'path'
 import Database from 'better-sqlite3'
 
-const dbPath: string = path.join(app.getPath('userData'), 'database.sqlite')
-const db: Database.Database = new Database(dbPath)
+let db: Database.Database
 
-// Create tables
-db.prepare(
-  `
+export function initDatabase(dbPath: string): void {
+  db = new Database(dbPath)
+
+  // Create tables
+  db.prepare(
+    `
   CREATE TABLE IF NOT EXISTS habits (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -21,10 +21,10 @@ db.prepare(
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `
-).run()
+  ).run()
 
-db.prepare(
-  `
+  db.prepare(
+    `
   CREATE TABLE IF NOT EXISTS habit_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     habit_id INTEGER NOT NULL,
@@ -35,7 +35,8 @@ db.prepare(
     UNIQUE(habit_id, date)
   )
 `
-).run()
+  ).run()
+}
 
 // Types
 export interface Habit {
