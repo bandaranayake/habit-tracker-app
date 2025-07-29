@@ -89,7 +89,8 @@ export const calculateTotalScores = (habits: Habit[], logs: HabitLog[]): ChartDa
   const startDate = moment().startOf('year')
   const currentDate = moment()
 
-  for (let date = startDate.clone(); date.isSameOrBefore(currentDate); date.add(1, 'day')) {
+  for (let d = startDate.clone(); d.isSameOrBefore(currentDate); d.add(1, 'day')) {
+    const date = d.clone()
     const formattedDate = date.format('YYYY-MM-DD')
     const habitLogs = logs.filter((log) => log.date === formattedDate)
 
@@ -153,7 +154,7 @@ export const calculateTotalScores = (habits: Habit[], logs: HabitLog[]): ChartDa
       const adjustedWeight = calculateWeight(habit.weight, misses)
       const streakBonus = calculateStreakBonus(streak)
       numerator += completed * adjustedWeight * streakBonus
-      denominator += habits.length * adjustedWeight
+      denominator += activeHabitIds.length * adjustedWeight
     }
 
     const scoreMap: ScoreMap = {
