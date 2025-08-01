@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts'
+import { Bar, BarChart, CartesianGrid, ReferenceLine, XAxis } from 'recharts'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -71,6 +71,7 @@ export default function Component({
                 })
               }}
             />
+            <ReferenceLine y={score} stroke="red" strokeDasharray="3 3" />
             <ChartTooltip
               content={
                 <ChartTooltipContent

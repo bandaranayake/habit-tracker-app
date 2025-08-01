@@ -4,7 +4,7 @@ import { Habit } from '@/interfaces/habit'
 import { HabitLog } from '@/interfaces/habitLog'
 import { ScoreEntry, ScoreMap } from '@/types/score'
 import { ChartData } from '@/types/chartData'
-import moment from 'moment'
+import moment, { Moment } from 'moment'
 
 const calculateStreakBonus = (currentStreak: number): number => {
   return 1 + currentStreak / 10
@@ -72,7 +72,7 @@ export const getLongestStreak = (records: HabitLog[]): number => {
 export const calculateTotalScores = (habits: Habit[], logs: HabitLog[]): ChartData[] => {
   const chartData: ChartData[] = []
   const scoreMaps: ScoreMap[] = []
-  const activeHabitIds: number[] = []
+  const habitStartDateMap: Map<number, Moment> = new Map()
   const startDate = moment().startOf('year')
   const currentDate = moment()
 
@@ -90,18 +90,15 @@ export const calculateTotalScores = (habits: Habit[], logs: HabitLog[]): ChartDa
       const habit = habits.find((h) => h.id === habitLog.habit_id)
       if (!habit) continue
 
-      const isActive = currentDate.diff(date, 'days') >= 7
-
-      if (isActive && !activeHabitIds.includes(habit.id)) {
-        activeHabitIds.push(habit.id)
+      if (!habitStartDateMap.has(habit.id)) {
+        habitStartDateMap.set(habit.id, date)
       }
 
-      if (!activeHabitIds.includes(habit.id)) continue
+      const latestScoreMap = scoreMaps.at(-1)
+      const filteredEntries =
+        latestScoreMap?.entries.filter((entry) => entry.habitId === habit.id) ?? []
 
-      const lastScoreMap = scoreMaps.at(-1)
-      const filtered = lastScoreMap?.entries.filter((entry) => entry.habitId === habit.id) ?? []
-
-      const previous: ScoreEntry = filtered[0] ?? {
+      const previousEntry: ScoreEntry = filteredEntries[0] ?? {
         habitId: habit.id,
         weight: habit.weight,
         completed: 0,
@@ -109,21 +106,18 @@ export const calculateTotalScores = (habits: Habit[], logs: HabitLog[]): ChartDa
         misses: 0
       }
 
-      let completed = 0
-      let streak = 0
-      let misses = 0
+      let completed = previousEntry.completed
+      let streak = previousEntry.streak
+      let misses = previousEntry.misses
 
       if (habitLog.state === HABIT_STATUS_COMPLETED) {
-        completed = previous.completed + 1
+        completed += 1
+        streak += 1
         misses = 0
-        streak = previous.streak + 1
       } else if (habitLog.state === HABIT_STATUS_SKIPPED) {
-        completed = previous.completed + 1
-        misses = previous.misses
-        streak = previous.streak
+        completed += 1
       } else {
-        completed = previous.completed
-        misses = previous.misses + 1
+        misses += 1
         streak = 0
       }
 
@@ -134,12 +128,15 @@ export const calculateTotalScores = (habits: Habit[], logs: HabitLog[]): ChartDa
         streak: streak,
         misses: misses
       }
+
       entries.push(scoreEntry)
 
       const adjustedWeight = calculateWeight(habit.weight, misses)
       const streakBonus = calculateStreakBonus(streak)
+      const totalDaysActive = date.diff(habitStartDateMap.get(habit.id), 'days')
+
       numerator += completed * adjustedWeight * streakBonus
-      denominator += activeHabitIds.length * adjustedWeight
+      denominator += (totalDaysActive + 1) * habit.weight
     }
 
     const scoreMap: ScoreMap = {
@@ -150,7 +147,7 @@ export const calculateTotalScores = (habits: Habit[], logs: HabitLog[]): ChartDa
 
     chartData.push({
       date: formattedDate,
-      score: denominator > 0 ? Math.round((numerator / denominator) * 100) / 100 : 0
+      score: denominator > 0 ? Math.round((numerator / denominator) * 1000) / 1000 : 0
     })
   }
 
