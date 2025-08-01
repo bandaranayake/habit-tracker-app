@@ -216,12 +216,15 @@ function App(): JSX.Element {
               ? 'bg-primary text-primary-foreground'
               : 'hover:bg-muted'
 
-            let progressRingClass = 'w-1.5 h-1.5 bg-gray-500 rounded-full'
-            if (progress.total > 0) {
-              if (progress.completed === progress.total) {
-                progressRingClass = 'w-1.5 h-1.5 bg-green-500 rounded-full'
-              } else if (progress.completed > 0) {
-                progressRingClass = 'w-1.5 h-1.5 bg-yellow-400 rounded-full'
+            let progressRingClass = ''
+            if (!isFutureDate(day)) {
+              progressRingClass = 'w-1.5 h-1.5 bg-gray-500 rounded-full'
+              if (progress.total > 0) {
+                if (progress.completed === progress.total) {
+                  progressRingClass = 'w-1.5 h-1.5 bg-green-500 rounded-full'
+                } else if (progress.completed > 0) {
+                  progressRingClass = 'w-1.5 h-1.5 bg-yellow-400 rounded-full'
+                }
               }
             }
 
