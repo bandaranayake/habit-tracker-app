@@ -37,6 +37,10 @@ function createWindow(): void {
     mainWindow.show()
   })
 
+  if (is.dev) {
+    mainWindow.webContents.openDevTools()
+  }
+
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
@@ -65,7 +69,7 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  initDatabase(join(app.getPath('userData'), 'database.sqlite'))
+  initDatabase(join(app.getPath('userData'), 'resources', 'database.sqlite'))
 
   ipcMain.handle('get-all-habits', () => {
     return getAllHabits()

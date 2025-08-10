@@ -16,7 +16,6 @@ export const HabitCard = ({
       <div>
         <h3 className="font-medium">{habit.name}</h3>
         <div className="flex gap-4 text-sm text-muted-foreground">
-          <span>Current: {habit.current_streak} days</span>
           <span>Best: {habit.longest_streak} days</span>
           <span>Rate: {habit.completion_rate}%</span>
           <span>Weight: {habit.weight}</span>
