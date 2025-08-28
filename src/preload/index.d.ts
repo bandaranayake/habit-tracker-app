@@ -15,6 +15,13 @@ declare global {
       ) => Promise<void>
       updateHabitLog: (habitId: number, date: string, state: number) => Promise<void>
       removeHabit: (habitId: number) => Promise<void>
+      saltExists: () => Promise<boolean>
+      dbExists: () => Promise<boolean>
+      getKdfSalt: () => Promise<string | null>
+      createSalt: () => Promise<string>
+      deriveKey: (password: string) => Promise<string | null>
+      createEncryptedDb: (key: string) => Promise<{ success: boolean; error?: string }>
+      openEncryptedDb: (key: string) => Promise<{ success: boolean; error?: string }>
     }
   }
 }

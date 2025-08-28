@@ -1,11 +1,20 @@
-import Database from 'better-sqlite3'
+import Database from 'better-sqlite3-multiple-ciphers'
 
 let db: Database.Database
 
-export function initDatabase(dbPath: string): void {
+export function openEncryptedDatabase(dbPath: string, key: string): void {
   db = new Database(dbPath)
+  db.pragma(`cipher = 'sqlcipher'`)
+  db.pragma(`key = '${key.replace(/'/g, "''")}'`)
 
-  // Create tables
+  db.prepare('SELECT 1 FROM sqlite_master LIMIT 1').get()
+}
+
+export function createEncryptedDatabase(dbPath: string, key: string): void {
+  db = new Database(dbPath)
+  db.pragma(`cipher = 'sqlcipher'`)
+  db.pragma(`key = '${key.replace(/'/g, "''")}'`)
+
   db.prepare(
     `
   CREATE TABLE IF NOT EXISTS habits (
@@ -30,7 +39,7 @@ export function initDatabase(dbPath: string): void {
     date TEXT NOT NULL,
     state INTEGER NOT NULL,
     status INTEGER NOT NULL,
-    FOREIGN KEY (habit_id) REFERENCES habits(id) ON DELETE CASCADE
+    FOREIGN KEY (habit_id) REFERENCES habits(id) ON DELETE CASCADE,
     UNIQUE(habit_id, date)
   )
 `
@@ -46,11 +55,11 @@ export interface Habit {
 
 // Functions
 export function getAllHabits(): Habit[] {
-  return db.prepare(`SELECT * FROM habits WHERE status = 1`).all()
+  return db.prepare(`SELECT * FROM habits WHERE status = 1`).all() as Habit[]
 }
 
 export function getAllHabitLogs(): Habit[] {
-  return db.prepare(`SELECT * FROM habit_logs WHERE status = 1`).all()
+  return db.prepare(`SELECT * FROM habit_logs WHERE status = 1`).all() as Habit[]
 }
 
 export function addHabit(name: string, color: string): number {

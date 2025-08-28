@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import LockScreen from './components/LockScreen'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
@@ -35,28 +36,30 @@ import BarChart from './components/chart/chart-bar-interactive'
 import { ChartData } from './types/chartData'
 
 function App(): JSX.Element {
+  const [unlocked, setUnlocked] = useState(false)
   const [habits, setHabits] = useState<Habit[]>([])
   const [records, setRecords] = useState<HabitLog[]>([])
   const [chartData, setChartData] = useState<ChartData[]>([])
-
   const [newHabitName, setNewHabitName] = useState<string>('')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date())
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    if (window.habitAPI) {
+    if (unlocked && window.habitAPI) {
       loadHabits()
-    } else {
-      setIsLoading(false)
     }
-  }, [])
+  }, [unlocked])
 
   useEffect(() => {
     if (!isLoading) {
       setChartData(calculateTotalScores(habits, records))
     }
   }, [isLoading, records, habits])
+
+  if (!unlocked) {
+    return <LockScreen onUnlock={() => setUnlocked(true)} />
+  }
 
   const loadHabits = async (): Promise<void> => {
     setIsLoading(true)

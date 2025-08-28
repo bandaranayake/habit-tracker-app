@@ -1,4 +1,6 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { randomBytes, pbkdf2Sync } from 'crypto'
+import { writeFileSync, readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -6,11 +8,27 @@ import {
   addHabit,
   getAllHabitLogs,
   getAllHabits,
-  initDatabase,
+  createEncryptedDatabase,
+  openEncryptedDatabase,
   removeHabit,
   updateHabit,
   updateHabitLog
 } from './db'
+
+let salt_file
+let db_file
+
+function saltExists(): boolean {
+  return existsSync(salt_file)
+}
+
+function dbExists(): boolean {
+  return existsSync(db_file)
+}
+
+function deriveKey(password: string, salt: Buffer, iterations = 100_000): Buffer {
+  return pbkdf2Sync(password, salt, iterations, 32, 'sha256')
+}
 
 if (is.dev) {
   app.setPath('userData', join(app.getPath('appData'), app.name + '-dev'))
@@ -69,8 +87,65 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  initDatabase(join(app.getPath('userData'), 'resources', 'database.sqlite'))
+  salt_file = join(app.getPath('userData'), '.salt')
+  db_file = join(app.getPath('userData'), 'database.sqlite')
 
+  // IPC: check if .salt and db exist
+  ipcMain.handle('salt-exists', () => saltExists())
+  ipcMain.handle('db-exists', () => dbExists())
+
+  // IPC: get or create salt
+  ipcMain.handle('get-kdf-salt', () => {
+    if (!saltExists()) return null
+    return readFileSync(salt_file).toString('base64')
+  })
+
+  // IPC: create salt
+  ipcMain.handle('create-salt', () => {
+    if (!saltExists()) {
+      const salt = randomBytes(32)
+      writeFileSync(salt_file, salt)
+      return salt.toString('base64')
+    }
+    return readFileSync(salt_file).toString('base64')
+  })
+
+  // IPC: derive key
+  ipcMain.handle('derive-key', (_, password: string) => {
+    if (!saltExists()) return null
+    const salt = readFileSync(salt_file)
+    const key = deriveKey(password, salt)
+    return key.toString('base64')
+  })
+
+  // IPC: create encrypted DB with derived key
+  ipcMain.handle('create-encrypted-db', async (_, key: string) => {
+    try {
+      createEncryptedDatabase(db_file, key)
+      return { success: true }
+    } catch (err: unknown) {
+      let errorMessage = 'Failed to create DB'
+
+      if (err instanceof Error) {
+        errorMessage = err?.message
+      }
+
+      return { success: false, error: errorMessage }
+    }
+  })
+
+  // IPC: open encrypted DB with derived key
+  ipcMain.handle('open-encrypted-db', async (_, key: string) => {
+    try {
+      if (!dbExists()) throw new Error('Database does not exist')
+      openEncryptedDatabase(db_file, key)
+      return { success: true }
+    } catch (err: unknown) {
+      return { success: false, error: 'Incorrect password provided' }
+    }
+  })
+
+  // IPC: database actions
   ipcMain.handle('get-all-habits', () => {
     return getAllHabits()
   })
