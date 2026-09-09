@@ -106,6 +106,10 @@ export function setHabitWeight(habitId: number, weight: number): void {
   db.prepare(`UPDATE habits SET weight = ? WHERE id = ?`).run(weight, habitId)
 }
 
+export function updateHabitDetails(habitId: number, name: string, color: string): void {
+  db.prepare(`UPDATE habits SET name = ?, color = ? WHERE id = ?`).run(name, color, habitId)
+}
+
 export function updateHabitLog(habitId: number, date: string, state: number): void {
   db.prepare(
     `INSERT INTO habit_logs (habit_id, date, state, status) VALUES (?, ?, ?, 1) ON CONFLICT(habit_id, date) DO UPDATE SET state = excluded.state, status = 1`
