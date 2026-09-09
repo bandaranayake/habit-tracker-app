@@ -1,6 +1,11 @@
 import { HabitLog } from '@/interfaces/habitLog'
 import { Habit } from '../renderer/src/interfaces/habit'
 
+export interface DbResult {
+  success: boolean
+  error?: string
+}
+
 declare global {
   interface Window {
     habitAPI: {
@@ -13,15 +18,13 @@ declare global {
         longest_streak: number,
         completion_rate: number
       ) => Promise<void>
+      setHabitWeight: (habitId: number, weight: number) => Promise<void>
       updateHabitLog: (habitId: number, date: string, state: number) => Promise<void>
       removeHabit: (habitId: number) => Promise<void>
       saltExists: () => Promise<boolean>
       dbExists: () => Promise<boolean>
-      getKdfSalt: () => Promise<string | null>
-      createSalt: () => Promise<string>
-      deriveKey: (password: string) => Promise<string | null>
-      createEncryptedDb: (key: string) => Promise<{ success: boolean; error?: string }>
-      openEncryptedDb: (key: string) => Promise<{ success: boolean; error?: string }>
+      createDatabase: (password: string) => Promise<DbResult>
+      unlockDatabase: (password: string) => Promise<DbResult>
     }
   }
 }

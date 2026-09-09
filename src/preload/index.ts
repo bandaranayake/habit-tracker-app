@@ -10,14 +10,13 @@ contextBridge.exposeInMainWorld('habitAPI', {
     longest_streak: number,
     completion_rate: number
   ) => ipcRenderer.invoke('update-habit', habitId, current_streak, longest_streak, completion_rate),
+  setHabitWeight: (habitId: number, weight: number) =>
+    ipcRenderer.invoke('set-habit-weight', habitId, weight),
   updateHabitLog: (habitId: number, date: string, state: number) =>
     ipcRenderer.invoke('update-habit-log', habitId, date, state),
   removeHabit: (habitId: number) => ipcRenderer.invoke('remove-habit', habitId),
   saltExists: () => ipcRenderer.invoke('salt-exists'),
   dbExists: () => ipcRenderer.invoke('db-exists'),
-  getKdfSalt: () => ipcRenderer.invoke('get-kdf-salt'),
-  createSalt: () => ipcRenderer.invoke('create-salt'),
-  deriveKey: (password: string) => ipcRenderer.invoke('derive-key', password),
-  createEncryptedDb: (key: string) => ipcRenderer.invoke('create-encrypted-db', key),
-  openEncryptedDb: (key: string) => ipcRenderer.invoke('open-encrypted-db', key)
+  createDatabase: (password: string) => ipcRenderer.invoke('create-database', password),
+  unlockDatabase: (password: string) => ipcRenderer.invoke('unlock-database', password)
 })

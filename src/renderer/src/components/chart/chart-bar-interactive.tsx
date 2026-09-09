@@ -1,5 +1,3 @@
-'use client'
-
 import * as React from 'react'
 import { Bar, BarChart, CartesianGrid, ReferenceLine, XAxis } from 'recharts'
 
@@ -32,6 +30,12 @@ export default function Component({
 }): JSX.Element {
   const [activeChart] = React.useState<keyof typeof chartConfig>('score')
 
+  const averageScore = React.useMemo(() => {
+    if (chartData.length === 0) return 0
+    const sum = chartData.reduce((acc, point) => acc + point.score, 0)
+    return Math.round((sum / chartData.length) * 1000) / 1000
+  }, [chartData])
+
   return (
     <Card>
       <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
@@ -41,8 +45,12 @@ export default function Component({
         </div>
         <div className="flex">
           <span className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
-            <span className="text-xs text-muted-foreground">score</span>
+            <span className="text-xs text-muted-foreground">latest</span>
             <span className="text-lg font-bold leading-none sm:text-3xl">{score}</span>
+          </span>
+          <span className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t border-l px-6 py-4 text-left sm:border-t-0 sm:px-8 sm:py-6">
+            <span className="text-xs text-muted-foreground">average</span>
+            <span className="text-lg font-bold leading-none sm:text-3xl">{averageScore}</span>
           </span>
         </div>
       </CardHeader>
@@ -71,12 +79,17 @@ export default function Component({
                 })
               }}
             />
-            <ReferenceLine y={score} stroke="red" strokeDasharray="3 3" />
+            <ReferenceLine
+              y={averageScore}
+              stroke="var(--color-score)"
+              strokeDasharray="3 3"
+              label={{ value: 'avg', position: 'right', fill: 'var(--color-score)', fontSize: 11 }}
+            />
             <ChartTooltip
               content={
                 <ChartTooltipContent
                   className="w-[150px]"
-                  nameKey="views"
+                  nameKey="score"
                   labelFormatter={(value) => {
                     return new Date(value).toLocaleDateString('en-US', {
                       month: 'short',

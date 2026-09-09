@@ -11,12 +11,22 @@ import {
   createEncryptedDatabase,
   openEncryptedDatabase,
   removeHabit,
+  setHabitWeight,
   updateHabit,
   updateHabitLog
 } from './db'
 
-let salt_file
-let db_file
+const KDF_ITERATIONS = 100_000
+const KDF_KEY_LENGTH = 32
+const SALT_LENGTH = 32
+const MIN_PASSWORD_LENGTH = 8
+
+let salt_file: string
+let db_file: string
+
+// In-memory brute-force throttle for the unlock flow. Reset on a successful
+// unlock; grows the forced delay after each consecutive failure.
+let failedUnlockAttempts = 0
 
 function saltExists(): boolean {
   return existsSync(salt_file)
@@ -26,8 +36,19 @@ function dbExists(): boolean {
   return existsSync(db_file)
 }
 
-function deriveKey(password: string, salt: Buffer, iterations = 100_000): Buffer {
-  return pbkdf2Sync(password, salt, iterations, 32, 'sha256')
+function getOrCreateSalt(): Buffer {
+  if (saltExists()) return readFileSync(salt_file)
+  const salt = randomBytes(SALT_LENGTH)
+  writeFileSync(salt_file, salt)
+  return salt
+}
+
+function deriveKey(password: string, salt: Buffer): string {
+  return pbkdf2Sync(password, salt, KDF_ITERATIONS, KDF_KEY_LENGTH, 'sha256').toString('base64')
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 if (is.dev) {
@@ -60,7 +81,16 @@ function createWindow(): void {
   }
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
+    // Only hand off ordinary web links to the OS browser; block everything else
+    // (file:, custom schemes, etc.).
+    try {
+      const { protocol } = new URL(details.url)
+      if (protocol === 'https:' || protocol === 'http:') {
+        shell.openExternal(details.url)
+      }
+    } catch {
+      // malformed URL - ignore
+    }
     return { action: 'deny' }
   })
 
@@ -77,8 +107,8 @@ function createWindow(): void {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
+  // Set app user model id for windows (must match electron-builder appId).
+  electronApp.setAppUserModelId('com.electron.app')
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
@@ -90,73 +120,67 @@ app.whenReady().then(() => {
   salt_file = join(app.getPath('userData'), '.salt')
   db_file = join(app.getPath('userData'), 'database.sqlite')
 
-  // IPC: check if .salt and db exist
+  // IPC: onboarding state
   ipcMain.handle('salt-exists', () => saltExists())
   ipcMain.handle('db-exists', () => dbExists())
 
-  // IPC: get or create salt
-  ipcMain.handle('get-kdf-salt', () => {
-    if (!saltExists()) return null
-    return readFileSync(salt_file).toString('base64')
-  })
-
-  // IPC: create salt
-  ipcMain.handle('create-salt', () => {
-    if (!saltExists()) {
-      const salt = randomBytes(32)
-      writeFileSync(salt_file, salt)
-      return salt.toString('base64')
-    }
-    return readFileSync(salt_file).toString('base64')
-  })
-
-  // IPC: derive key
-  ipcMain.handle('derive-key', (_, password: string) => {
-    if (!saltExists()) return null
-    const salt = readFileSync(salt_file)
-    const key = deriveKey(password, salt)
-    return key.toString('base64')
-  })
-
-  // IPC: create encrypted DB with derived key
-  ipcMain.handle('create-encrypted-db', async (_, key: string) => {
-    try {
-      createEncryptedDatabase(db_file, key)
-      return { success: true }
-    } catch (err: unknown) {
-      let errorMessage = 'Failed to create DB'
-
-      if (err instanceof Error) {
-        errorMessage = err?.message
+  // IPC: create the encrypted database from a password. The derived key never
+  // leaves the main process.
+  ipcMain.handle('create-database', async (_, password: string) => {
+    if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
+      return {
+        success: false,
+        error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters`
       }
+    }
+    if (dbExists()) {
+      return { success: false, error: 'Database already exists' }
+    }
 
-      return { success: false, error: errorMessage }
+    try {
+      const key = deriveKey(password, getOrCreateSalt())
+      createEncryptedDatabase(db_file, key)
+      failedUnlockAttempts = 0
+      return { success: true }
+    } catch (err: unknown) {
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Failed to create database'
+      }
     }
   })
 
-  // IPC: open encrypted DB with derived key
-  ipcMain.handle('open-encrypted-db', async (_, key: string) => {
+  // IPC: unlock the existing encrypted database with a password.
+  ipcMain.handle('unlock-database', async (_, password: string) => {
+    if (!dbExists() || !saltExists()) {
+      return { success: false, error: 'Database does not exist' }
+    }
+    if (typeof password !== 'string' || password.length === 0) {
+      return { success: false, error: 'Password cannot be empty' }
+    }
+
+    // Escalating delay after repeated failures (capped at 5s).
+    if (failedUnlockAttempts > 0) {
+      await delay(Math.min(failedUnlockAttempts * 500, 5000))
+    }
+
     try {
-      if (!dbExists()) throw new Error('Database does not exist')
+      const key = deriveKey(password, readFileSync(salt_file))
       openEncryptedDatabase(db_file, key)
+      failedUnlockAttempts = 0
       return { success: true }
-    } catch (err: unknown) {
+    } catch {
+      failedUnlockAttempts++
       return { success: false, error: 'Incorrect password provided' }
     }
   })
 
   // IPC: database actions
-  ipcMain.handle('get-all-habits', () => {
-    return getAllHabits()
-  })
+  ipcMain.handle('get-all-habits', () => getAllHabits())
 
-  ipcMain.handle('get-all-habit-logs', () => {
-    return getAllHabitLogs()
-  })
+  ipcMain.handle('get-all-habit-logs', () => getAllHabitLogs())
 
-  ipcMain.handle('add-habit', (_, name: string, color: string) => {
-    return addHabit(name, color)
-  })
+  ipcMain.handle('add-habit', (_, name: string, color: string) => addHabit(name, color))
 
   ipcMain.handle(
     'update-habit',
@@ -171,13 +195,15 @@ app.whenReady().then(() => {
     }
   )
 
+  ipcMain.handle('set-habit-weight', (_, habitId: number, weight: number) => {
+    return setHabitWeight(habitId, weight)
+  })
+
   ipcMain.handle('update-habit-log', (_, habitId: number, date: string, state: number) => {
     return updateHabitLog(habitId, date, state)
   })
 
-  ipcMain.handle('remove-habit', (_, habitId: number) => {
-    return removeHabit(habitId)
-  })
+  ipcMain.handle('remove-habit', (_, habitId: number) => removeHabit(habitId))
 
   createWindow()
 
@@ -196,6 +222,3 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
-
-// In this file you can include the rest of your app"s specific main process
-// code. You can also put them in separate files and require them here.

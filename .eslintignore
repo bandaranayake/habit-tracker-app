@@ -2,3 +2,5 @@ node_modules
 dist
 out
 .gitignore
+# vendored shadcn/ui primitives - regenerated via the shadcn CLI, not hand-linted
+src/renderer/src/components/ui
