@@ -7,20 +7,22 @@ import { ChartData } from '@/types/chartData'
 const STREAK_LOOKBACK_DAYS = 365
 
 /**
- * Parse a SQLite timestamp (`"YYYY-MM-DD"` or `"YYYY-MM-DD HH:MM:SS"`) to local
- * midnight of that calendar day, avoiding UTC-vs-local skew near midnight.
+ * Parse a `"YYYY-MM-DD"` (or `"YYYY-MM-DD HH:MM:SS"`) string to local midnight of
+ * that calendar day, avoiding UTC-vs-local skew near midnight.
  */
 const parseLocalDay = (timestamp: string): Date => {
   const [y, m, d] = timestamp.slice(0, 10).split('-').map(Number)
   return new Date(y, (m || 1) - 1, d || 1)
 }
 
-const calculateStreakBonus = (currentStreak: number): number => {
+/** Long streaks earn a multiplier: +10% per consecutive completed day. */
+const streakBonus = (currentStreak: number): number => {
   return 1 + currentStreak / 10
 }
 
-const calculateWeight = (originalWeight: number, daysMissed: number): number => {
-  return originalWeight * Math.pow(0.9, daysMissed)
+/** Recent misses shrink a habit's score: each miss multiplies by 0.9. */
+const missPenalty = (misses: number): number => {
+  return Math.pow(0.9, misses)
 }
 
 /**
@@ -92,35 +94,56 @@ export const getLongestStreak = (records: HabitLog[]): number => {
 }
 
 /**
- * Daily habit score series for the current calendar year.
+ * Daily habit-score series for the current calendar year.
  *
- * The running per-habit state (completed count, streak, misses) accumulates
- * from each habit's `created_at` so scores don't discontinuously reset on
- * Jan 1; only the emitted points are clipped to the current year.
+ * Design goals:
+ * - **Adding a habit never moves the score.** A habit is invisible to the score
+ *   until it has been engaged with at least once — it enters on its first log
+ *   date, not its creation date. Creating a habit and never logging it changes
+ *   nothing.
+ * - No discontinuity on Jan 1: the running per-habit state accumulates from each
+ *   habit's first log; only the emitted points are clipped to the current year.
  *
- * Each day, every habit that already exists contributes:
- *   numerator   += completed * weight * 0.9^misses * (1 + streak/10)
- *   denominator += (daysActive + 1) * weight
- * score = round(numerator / denominator, 3)   (roughly 0..1)
+ * For a habit on a given day (from its first log onward) with running counters
+ * `completed` / `streak` / `misses` and `daysTracked` days since its first log:
+ *
+ *   habitScore = min(1, completed/daysTracked * 0.9^misses * (1 + streak/10))
+ *
+ * i.e. a 0..1 "consistency" number: the completion ratio, nudged down by recent
+ * misses and up (recovering toward 1) by the current streak. A perfectly kept
+ * habit sits at 1.0.
+ *
+ * The overall day score is the weight-weighted mean of the habitScores of every
+ * habit in tracking that day (0 when none are), rounded to 3 decimals. Because
+ * it is a capped mean, first-logging a new habit can only hold the score steady
+ * or raise it — it never drags a shared denominator down.
  */
 export const calculateTotalScores = (habits: Habit[], logs: HabitLog[]): ChartData[] => {
   const today = startOfDay(new Date())
   const displayStart = new Date(today.getFullYear(), 0, 1)
 
-  const activeHabits = habits.filter((h) => h.created_at)
-  if (activeHabits.length === 0) return []
+  // First log date per habit; habits with no logs are excluded from the score.
+  const firstLog = new Map<number, Date>()
+  for (const log of logs) {
+    const day = parseLocalDay(log.date)
+    const existing = firstLog.get(log.habit_id)
+    if (!existing || day < existing) firstLog.set(log.habit_id, day)
+  }
 
-  const createdAt = new Map(activeHabits.map((h) => [h.id, parseLocalDay(h.created_at)]))
-
-  // Start accumulating from the earliest habit creation (or the year start).
-  let cursor = new Date(displayStart)
-  for (const h of activeHabits) {
-    const c = createdAt.get(h.id)!
-    if (c < cursor) cursor = new Date(c)
+  const trackedHabits = habits.filter((h) => firstLog.has(h.id))
+  if (trackedHabits.length === 0) {
+    return []
   }
 
   const logIndex = new Map(logs.map((log) => [`${log.habit_id}|${log.date}`, log]))
-  const running = new Map(activeHabits.map((h) => [h.id, { completed: 0, streak: 0, misses: 0 }]))
+  const running = new Map(trackedHabits.map((h) => [h.id, { completed: 0, streak: 0, misses: 0 }]))
+
+  // Accumulate from the earliest first-log date across all tracked habits.
+  let cursor = new Date(displayStart)
+  for (const h of trackedHabits) {
+    const start = firstLog.get(h.id)!
+    if (start < cursor) cursor = new Date(start)
+  }
 
   const chartData: ChartData[] = []
 
@@ -128,11 +151,11 @@ export const calculateTotalScores = (habits: Habit[], logs: HabitLog[]): ChartDa
     const formattedDate = formatDate(cursor)
     const cursorDay = startOfDay(cursor)
 
-    let numerator = 0
-    let denominator = 0
+    let weightedScore = 0
+    let totalWeight = 0
 
-    for (const habit of activeHabits) {
-      const start = createdAt.get(habit.id)!
+    for (const habit of trackedHabits) {
+      const start = firstLog.get(habit.id)!
       if (cursorDay < start) continue
 
       const state = running.get(habit.id)!
@@ -148,21 +171,23 @@ export const calculateTotalScores = (habits: Habit[], logs: HabitLog[]): ChartDa
         state.misses += 1
         state.streak = 0
       }
-      // unlogged day: neutral for streak/misses, but it still enlarges the
-      // denominator below, which is what deflates sparse logging.
+      // unlogged day: neutral for streak/misses; daysTracked below still grows,
+      // so sparse logging decays the habit's score.
 
-      const adjustedWeight = calculateWeight(habit.weight, state.misses)
-      const streakBonus = calculateStreakBonus(state.streak)
-      const daysActive = daysBetween(start, cursorDay) + 1
+      const daysTracked = daysBetween(start, cursorDay) + 1
+      const habitScore = Math.min(
+        1,
+        (state.completed / daysTracked) * missPenalty(state.misses) * streakBonus(state.streak)
+      )
 
-      numerator += state.completed * adjustedWeight * streakBonus
-      denominator += daysActive * habit.weight
+      weightedScore += habitScore * habit.weight
+      totalWeight += habit.weight
     }
 
     if (cursorDay >= displayStart) {
       chartData.push({
         date: formattedDate,
-        score: denominator > 0 ? Math.round((numerator / denominator) * 1000) / 1000 : 0
+        score: totalWeight > 0 ? Math.round((weightedScore / totalWeight) * 1000) / 1000 : 0
       })
     }
   }
