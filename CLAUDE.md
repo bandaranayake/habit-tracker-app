@@ -37,6 +37,7 @@ See `README.md` for `dev`, `build*`, and data-location details. Notes beyond it:
 - Node.js 20+ required.
 
 <!-- CLAUDE.md -->
+
 ## Work tracking
 
 - Open tasks live in `TODO.md`. Read it when asked what's next;

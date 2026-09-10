@@ -11,6 +11,7 @@ Run these four checks in order, from the repo root. They mirror `.github/workflo
 4. `npx electron-vite build` — full bundle.
 
 Notes:
+
 - Do not run `npm run lint` or `npm run format` as part of verification — they rewrite files. If step 2 or 3 fails, report the problems; only fix them (via `--fix` / `--write` or by hand) if asked.
 - There is no test suite — these four checks are the whole gate.
 - If `node_modules` is missing, run `npm ci` first.
