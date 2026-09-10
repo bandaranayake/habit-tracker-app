@@ -129,6 +129,14 @@ function App(): JSX.Element {
     })
   }
 
+  const editHabit = (habitId: number, name: string, color: string): void => {
+    setHabits((prev) => prev.map((h) => (h.id === habitId ? { ...h, name, color } : h)))
+    window.habitAPI.updateHabitDetails(habitId, name, color).catch((error) => {
+      console.error(error)
+      loadHabits()
+    })
+  }
+
   const mergeHabitLog = (
     habitRecords: HabitLog[],
     habitId: number,
@@ -218,6 +226,7 @@ function App(): JSX.Element {
                     habit={habit}
                     removeHabit={removeHabit}
                     setHabitWeight={setHabitWeight}
+                    editHabit={editHabit}
                   />
                 ))}
                 {habits.length === 0 && (
