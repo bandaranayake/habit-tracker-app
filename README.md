@@ -16,7 +16,7 @@ server, and no network sync.
 
 ## Requirements
 
-- Node.js 20+
+- Node.js 22.13+ (required by the pinned pnpm version)
 - [pnpm](https://pnpm.io) (the repo pins a version via `packageManager`; run
   `corepack enable` and it is fetched automatically)
 - On first `pnpm install`, native modules are rebuilt for Electron

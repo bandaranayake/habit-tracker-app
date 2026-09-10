@@ -37,7 +37,7 @@ See `README.md` for `dev`, `build*`, and data-location details. Notes beyond it:
 
 - Branch names: `feature/<slug>` or `fix/<slug>`. Merge to `main` via GitHub PR (merge commits). CI runs on every PR.
 - Commit messages: short imperative summaries; no conventional-commits format.
-- Node.js 20+ required.
+- Node.js 22.13+ required (the pinned pnpm 11 needs it).
 
 <!-- CLAUDE.md -->
 
