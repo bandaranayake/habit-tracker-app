@@ -53,8 +53,3 @@ npm run build:linux   # AppImage / snap / deb
 
 The folder holds `.salt` (the KDF salt) and `database.sqlite` (the encrypted
 database). **If you forget your password the data cannot be recovered.**
-
-## Architecture
-
-See [CLAUDE.md](./CLAUDE.md) for a full description of the codebase, data model,
-scoring algorithm, and IPC surface.
