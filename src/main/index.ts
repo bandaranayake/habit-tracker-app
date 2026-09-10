@@ -13,6 +13,7 @@ import {
   removeHabit,
   setHabitWeight,
   updateHabit,
+  updateHabitDetails,
   updateHabitLog
 } from './db'
 
@@ -197,6 +198,10 @@ app.whenReady().then(() => {
 
   ipcMain.handle('set-habit-weight', (_, habitId: number, weight: number) => {
     return setHabitWeight(habitId, weight)
+  })
+
+  ipcMain.handle('update-habit-details', (_, habitId: number, name: string, color: string) => {
+    return updateHabitDetails(habitId, name, color)
   })
 
   ipcMain.handle('update-habit-log', (_, habitId: number, date: string, state: number) => {

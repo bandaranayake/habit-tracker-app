@@ -19,6 +19,7 @@ declare global {
         completion_rate: number
       ) => Promise<void>
       setHabitWeight: (habitId: number, weight: number) => Promise<void>
+      updateHabitDetails: (habitId: number, name: string, color: string) => Promise<void>
       updateHabitLog: (habitId: number, date: string, state: number) => Promise<void>
       removeHabit: (habitId: number) => Promise<void>
       saltExists: () => Promise<boolean>
