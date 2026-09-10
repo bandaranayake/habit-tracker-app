@@ -6,6 +6,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import {
   addHabit,
+  archiveHabit,
   getAllHabitLogs,
   getAllHabits,
   createEncryptedDatabase,
@@ -13,6 +14,7 @@ import {
   removeHabit,
   setHabitTarget,
   setHabitWeight,
+  unarchiveHabit,
   updateHabit,
   updateHabitDetails,
   updateHabitLog
@@ -214,6 +216,10 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('remove-habit', (_, habitId: number) => removeHabit(habitId))
+
+  ipcMain.handle('archive-habit', (_, habitId: number) => archiveHabit(habitId))
+
+  ipcMain.handle('unarchive-habit', (_, habitId: number) => unarchiveHabit(habitId))
 
   createWindow()
 

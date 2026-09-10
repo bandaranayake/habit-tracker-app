@@ -102,9 +102,18 @@ export function createEncryptedDatabase(dbPath: string, key: string): void {
   initSchema(db)
 }
 
+// Row `status` values shared by `habits` and `habit_logs`.
+export const STATUS_DELETED = 0
+export const STATUS_ACTIVE = 1
+export const STATUS_ARCHIVED = 2
+
 // Functions
 export function getAllHabits(): HabitRow[] {
-  return db.prepare(`SELECT * FROM habits WHERE status = 1`).all() as HabitRow[]
+  // Active and archived habits; archived ones are filtered out in the renderer
+  // for the tracking views but still shown in the archived list.
+  return db
+    .prepare(`SELECT * FROM habits WHERE status IN (${STATUS_ACTIVE}, ${STATUS_ARCHIVED})`)
+    .all() as HabitRow[]
 }
 
 export function getAllHabitLogs(): HabitLogRow[] {
@@ -148,8 +157,18 @@ export function updateHabitLog(habitId: number, date: string, state: number): vo
 
 export function removeHabit(habitId: number): void {
   const remove = db.transaction(() => {
-    db.prepare(`UPDATE habits SET status = 0 WHERE id = ?`).run(habitId)
-    db.prepare(`UPDATE habit_logs SET status = 0 WHERE habit_id = ?`).run(habitId)
+    db.prepare(`UPDATE habits SET status = ${STATUS_DELETED} WHERE id = ?`).run(habitId)
+    db.prepare(`UPDATE habit_logs SET status = ${STATUS_DELETED} WHERE habit_id = ?`).run(habitId)
   })
   remove()
+}
+
+/** Stop tracking a habit without deleting it; its logs are left untouched. */
+export function archiveHabit(habitId: number): void {
+  db.prepare(`UPDATE habits SET status = ${STATUS_ARCHIVED} WHERE id = ?`).run(habitId)
+}
+
+/** Resume tracking a previously archived habit. */
+export function unarchiveHabit(habitId: number): void {
+  db.prepare(`UPDATE habits SET status = ${STATUS_ACTIVE} WHERE id = ?`).run(habitId)
 }
