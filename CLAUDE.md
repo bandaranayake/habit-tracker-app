@@ -14,7 +14,7 @@ See `README.md` for `dev`, `build*`, and data-location details. Notes beyond it:
 
 ## Code style
 
-- Prettier enforces: single quotes, **no semicolons**, `printWidth: 100`, no trailing commas, and **`endOfLine: crlf`**. `.editorconfig` says `lf` but Prettier wins for TS/JS/JSON — do not convert files to LF or `prettier --check` fails in CI.
+- Prettier enforces: single quotes, **no semicolons**, `printWidth: 100`, no trailing commas, and **`endOfLine: lf`**. `.gitattributes` normalizes every text file to LF; do not commit CRLF.
 - ESLint uses the classic `.eslintrc.cjs` (not flat config).
 - `src/renderer/src/components/ui/` is vendored shadcn/ui (new-york style, zinc). Do not hand-edit or lint it — regenerate via the shadcn CLI. It is in `.eslintignore`.
 

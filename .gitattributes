@@ -1,0 +1,9 @@
+# Normalize every text file to LF in the repo and check it out as LF on all
+# platforms. Keeps Windows checkouts consistent with CI (which runs on Linux)
+# and matches .editorconfig / .prettierrc.yaml (endOfLine: lf).
+* text=auto eol=lf
+
+# Binary assets - never normalize or diff.
+*.png binary
+*.ico binary
+*.icns binary
