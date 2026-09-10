@@ -7,6 +7,8 @@ export interface Habit {
   weight: number
   /** Target completions per week; `null` means a daily habit (expected every day). */
   target_per_week: number | null
+  /** User-controlled list position; lower sorts first. */
+  sort_order: number
   current_streak: number
   longest_streak: number
   completion_rate: number

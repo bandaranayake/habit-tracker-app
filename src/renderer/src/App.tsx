@@ -63,6 +63,7 @@ function App(): JSX.Element {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
   const deleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [draggingId, setDraggingId] = useState<number | null>(null)
 
   const activeHabits = useMemo(() => habits.filter((h) => h.status === HABIT_ACTIVE), [habits])
   const archivedHabits = useMemo(() => habits.filter((h) => h.status === HABIT_ARCHIVED), [habits])
@@ -178,7 +179,7 @@ function App(): JSX.Element {
     if (!pendingDelete) return
     clearDeleteTimer()
     const { habit, records: restored } = pendingDelete
-    setHabits((prev) => [...prev, habit].sort((a, b) => a.id - b.id))
+    setHabits((prev) => [...prev, habit].sort((a, b) => a.sort_order - b.sort_order || a.id - b.id))
     setRecords((prev) => [...prev, ...restored])
     setPendingDelete(null)
   }
@@ -201,6 +202,35 @@ function App(): JSX.Element {
   const unarchiveHabit = (habitId: number): void => {
     setHabits((prev) => prev.map((h) => (h.id === habitId ? { ...h, status: HABIT_ACTIVE } : h)))
     window.habitAPI.unarchiveHabit(habitId).catch((error) => {
+      console.error(error)
+      loadHabits()
+    })
+  }
+
+  const handleReorderDragStart = (id: number): void => setDraggingId(id)
+
+  // Live reorder: as the dragged row passes over another, splice it into that
+  // slot. Only active habits participate; archived ones keep their order.
+  const handleReorderDragEnter = (id: number): void => {
+    if (draggingId == null || draggingId === id) return
+    setHabits((prev) => {
+      const active = prev.filter((h) => h.status === HABIT_ACTIVE)
+      const rest = prev.filter((h) => h.status !== HABIT_ACTIVE)
+      const from = active.findIndex((h) => h.id === draggingId)
+      const to = active.findIndex((h) => h.id === id)
+      if (from === -1 || to === -1 || from === to) return prev
+      const next = [...active]
+      const [moved] = next.splice(from, 1)
+      next.splice(to, 0, moved)
+      return [...next, ...rest]
+    })
+  }
+
+  const handleReorderDragEnd = (): void => {
+    setDraggingId(null)
+    const orderedIds = habits.map((h) => h.id)
+    setHabits((prev) => prev.map((h, index) => ({ ...h, sort_order: index })))
+    window.habitAPI.reorderHabits(orderedIds).catch((error) => {
       console.error(error)
       loadHabits()
     })
@@ -340,6 +370,10 @@ function App(): JSX.Element {
                     setHabitWeight={setHabitWeight}
                     setHabitTarget={setHabitTarget}
                     editHabit={editHabit}
+                    isDragging={draggingId === habit.id}
+                    onDragStart={() => handleReorderDragStart(habit.id)}
+                    onDragEnter={() => handleReorderDragEnter(habit.id)}
+                    onDragEnd={handleReorderDragEnd}
                   />
                 ))}
                 {activeHabits.length === 0 && (

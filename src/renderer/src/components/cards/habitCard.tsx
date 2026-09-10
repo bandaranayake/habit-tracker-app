@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Archive, Check, Pencil, Trash2, X } from 'lucide-react'
+import { Archive, Check, GripVertical, Pencil, Trash2, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,6 +30,11 @@ interface HabitCardProps {
   setHabitWeight: (id: number, weight: number) => void
   setHabitTarget: (id: number, targetPerWeek: number | null) => void
   editHabit: (id: number, name: string, color: string) => void
+  /** Hand-rolled HTML5 drag-and-drop reordering, driven by the parent list. */
+  isDragging: boolean
+  onDragStart: () => void
+  onDragEnter: () => void
+  onDragEnd: () => void
 }
 
 export const HabitCard = ({
@@ -38,11 +43,18 @@ export const HabitCard = ({
   archiveHabit,
   setHabitWeight,
   setHabitTarget,
-  editHabit
+  editHabit,
+  isDragging,
+  onDragStart,
+  onDragEnter,
+  onDragEnd
 }: HabitCardProps): JSX.Element => {
   const [isEditing, setIsEditing] = useState(false)
   const [draftName, setDraftName] = useState(habit.name)
   const [draftColor, setDraftColor] = useState(habit.color)
+  // The row is only draggable while the grip handle is held, so the inline
+  // selects and buttons keep working normally.
+  const [dragEnabled, setDragEnabled] = useState(false)
 
   const startEditing = (): void => {
     setDraftName(habit.name)
@@ -106,8 +118,33 @@ export const HabitCard = ({
   }
 
   return (
-    <div className="flex items-center justify-between p-3 border rounded-lg">
+    <div
+      draggable={dragEnabled}
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = 'move'
+        onDragStart()
+      }}
+      onDragEnter={onDragEnter}
+      onDragOver={(e) => e.preventDefault()}
+      onDragEnd={() => {
+        setDragEnabled(false)
+        onDragEnd()
+      }}
+      className={`flex items-center justify-between p-3 border rounded-lg bg-card transition-opacity ${
+        isDragging ? 'opacity-50' : ''
+      }`}
+    >
       <div className="flex items-center gap-3">
+        <button
+          type="button"
+          className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
+          onMouseDown={() => setDragEnabled(true)}
+          onMouseUp={() => setDragEnabled(false)}
+          title="Drag to reorder"
+          aria-label="Drag to reorder"
+        >
+          <GripVertical className="w-4 h-4" />
+        </button>
         <div className={`w-4 h-4 rounded-full ${habit.color}`} />
         <div>
           <h3 className="font-medium">{habit.name}</h3>

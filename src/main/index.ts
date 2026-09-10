@@ -12,6 +12,7 @@ import {
   createEncryptedDatabase,
   openEncryptedDatabase,
   removeHabit,
+  reorderHabits,
   setHabitTarget,
   setHabitWeight,
   unarchiveHabit,
@@ -216,6 +217,8 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('remove-habit', (_, habitId: number) => removeHabit(habitId))
+
+  ipcMain.handle('reorder-habits', (_, orderedIds: number[]) => reorderHabits(orderedIds))
 
   ipcMain.handle('archive-habit', (_, habitId: number) => archiveHabit(habitId))
 

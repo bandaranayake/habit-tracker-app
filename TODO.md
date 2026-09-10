@@ -5,12 +5,10 @@ tested and merged before the next starts. Branches are listed in build order.
 
 ## Now
 
-_Between branches — `feature/reorder-habits` is up next._
+_`feature/reorder-habits` done (awaiting test) — `feature/settings` in progress._
 
 ## Next
 
-- [ ] `feature/reorder-habits` — user-controlled ordering
-  - [ ] Reorder habits with a drag handle (hand-rolled HTML5 drag-and-drop, no new dependency). Schema: `sort_order INTEGER`.
 - [ ] `feature/settings` — app preferences
   - [ ] Dark mode toggle — the CSS `.dark` palette exists but nothing sets it.
   - [ ] Settings screen — first day of week (calendar is hard-coded Sunday-first), date format, etc. New `settings` key/value table + a settings context.
@@ -24,5 +22,6 @@ _Between branches — `feature/reorder-habits` is up next._
 
 ## Done
 
+- [x] `feature/reorder-habits` — Drag-handle reordering of active habits (hand-rolled HTML5 drag-and-drop, no new dependency). Schema: `sort_order INTEGER`, backfilled from `id`; new habits append.
 - [x] `feature/habit-lifecycle` — Delete confirmation dialog + deferred delete with an undo snackbar; archive/unarchive habits (`status = 2`) with a collapsible archived section; "Mark all done" bulk action in the logger.
 - [x] `feature/habit-goals` — Per-habit goal / target frequency ("N× per week") with score and streak logic that respects it. Off days no longer penalised; weekly-goal habits track streaks in weeks.
