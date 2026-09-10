@@ -41,7 +41,12 @@ export const CalendarCard = ({
     const completed = dayRecords.filter(
       (r) => r.state === HABIT_STATUS_COMPLETED || r.state === HABIT_STATUS_SKIPPED
     ).length
-    return { completed, total: habits.length }
+    // A weekly-goal habit is only "expected" on a given day if it was logged
+    // that day; its untouched off days should not make the day look incomplete.
+    const total = habits.filter(
+      (h) => h.target_per_week == null || dayRecords.some((r) => r.habit_id === h.id)
+    ).length
+    return { completed, total }
   }
 
   return (

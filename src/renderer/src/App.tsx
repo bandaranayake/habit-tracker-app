@@ -25,8 +25,8 @@ const withRecomputedStats = (habit: Habit, allRecords: HabitLog[]): Habit => {
   const habitRecords = allRecords.filter((r) => r.habit_id === habit.id)
   return {
     ...habit,
-    current_streak: calculateStreak(habitRecords),
-    longest_streak: getLongestStreak(habitRecords),
+    current_streak: calculateStreak(habitRecords, habit.target_per_week),
+    longest_streak: getLongestStreak(habitRecords, habit.target_per_week),
     completion_rate: calculateCompletionRate(habitRecords)
   }
 }
@@ -129,6 +129,22 @@ function App(): JSX.Element {
     })
   }
 
+  const setHabitTarget = (habitId: number, targetPerWeek: number | null): void => {
+    // Changing the goal changes how streaks/score are measured, so recompute
+    // this habit's cached stats from its logs.
+    setHabits((prev) =>
+      prev.map((h) =>
+        h.id === habitId
+          ? withRecomputedStats({ ...h, target_per_week: targetPerWeek }, records)
+          : h
+      )
+    )
+    window.habitAPI.setHabitTarget(habitId, targetPerWeek).catch((error) => {
+      console.error(error)
+      loadHabits()
+    })
+  }
+
   const editHabit = (habitId: number, name: string, color: string): void => {
     setHabits((prev) => prev.map((h) => (h.id === habitId ? { ...h, name, color } : h)))
     window.habitAPI.updateHabitDetails(habitId, name, color).catch((error) => {
@@ -157,8 +173,8 @@ function App(): JSX.Element {
     const habitRecords = records.filter((record) => record.habit_id === habitId)
     const updatedRecords = mergeHabitLog(habitRecords, habitId, date, state)
 
-    const currentStreak = calculateStreak(updatedRecords)
-    const longestStreak = getLongestStreak(updatedRecords)
+    const currentStreak = calculateStreak(updatedRecords, habit.target_per_week)
+    const longestStreak = getLongestStreak(updatedRecords, habit.target_per_week)
     const completionRate = calculateCompletionRate(updatedRecords)
 
     window.habitAPI
@@ -226,6 +242,7 @@ function App(): JSX.Element {
                     habit={habit}
                     removeHabit={removeHabit}
                     setHabitWeight={setHabitWeight}
+                    setHabitTarget={setHabitTarget}
                     editHabit={editHabit}
                   />
                 ))}

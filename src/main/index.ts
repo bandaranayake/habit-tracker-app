@@ -11,6 +11,7 @@ import {
   createEncryptedDatabase,
   openEncryptedDatabase,
   removeHabit,
+  setHabitTarget,
   setHabitWeight,
   updateHabit,
   updateHabitDetails,
@@ -198,6 +199,10 @@ app.whenReady().then(() => {
 
   ipcMain.handle('set-habit-weight', (_, habitId: number, weight: number) => {
     return setHabitWeight(habitId, weight)
+  })
+
+  ipcMain.handle('set-habit-target', (_, habitId: number, targetPerWeek: number | null) => {
+    return setHabitTarget(habitId, targetPerWeek)
   })
 
   ipcMain.handle('update-habit-details', (_, habitId: number, name: string, color: string) => {

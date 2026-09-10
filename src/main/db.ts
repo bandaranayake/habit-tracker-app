@@ -10,6 +10,8 @@ export interface HabitRow {
   color: string
   status: number
   weight: number
+  /** Target completions per week; `null` means a daily habit (expected every day). */
+  target_per_week: number | null
   current_streak: number
   longest_streak: number
   completion_rate: number
@@ -25,6 +27,24 @@ export interface HabitLogRow {
 }
 
 /**
+ * Add a column to an existing table if it is missing. There is no migration
+ * system, but a schema change must not wipe a developer's local database, so
+ * columns added after the initial `CREATE TABLE` are backfilled here. New
+ * databases get the column straight from the `CREATE TABLE` DDL below.
+ */
+function ensureColumn(
+  handle: Database.Database,
+  table: string,
+  column: string,
+  definition: string
+): void {
+  const columns = handle.pragma(`table_info(${table})`) as { name: string }[]
+  if (!columns.some((c) => c.name === column)) {
+    handle.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
+  }
+}
+
+/**
  * The full schema. There is no migration system: the app has no released
  * versions with existing user databases, so schema changes edit this DDL
  * directly. `IF NOT EXISTS` keeps `createEncryptedDatabase` idempotent.
@@ -37,6 +57,7 @@ function initSchema(handle: Database.Database): void {
       color TEXT NOT NULL,
       status INTEGER NOT NULL,
       weight REAL DEFAULT 1.0,
+      target_per_week INTEGER,
       current_streak INTEGER DEFAULT 0,
       longest_streak INTEGER DEFAULT 0,
       completion_rate REAL DEFAULT 0.0,
@@ -53,6 +74,8 @@ function initSchema(handle: Database.Database): void {
       UNIQUE(habit_id, date)
     );
   `)
+
+  ensureColumn(handle, 'habits', 'target_per_week', 'INTEGER')
 }
 
 function applyKey(dbPath: string, key: string): Database.Database {
@@ -70,6 +93,8 @@ export function openEncryptedDatabase(dbPath: string, key: string): void {
   db = applyKey(dbPath, key)
   // Throws if the key is wrong (cannot read the encrypted header).
   db.prepare('SELECT 1 FROM sqlite_master LIMIT 1').get()
+  // Idempotent: backfills any columns added since this database was created.
+  initSchema(db)
 }
 
 export function createEncryptedDatabase(dbPath: string, key: string): void {
@@ -104,6 +129,11 @@ export function updateHabit(
 
 export function setHabitWeight(habitId: number, weight: number): void {
   db.prepare(`UPDATE habits SET weight = ? WHERE id = ?`).run(weight, habitId)
+}
+
+/** `targetPerWeek` is 1-6 for a weekly goal, or `null` for a daily habit. */
+export function setHabitTarget(habitId: number, targetPerWeek: number | null): void {
+  db.prepare(`UPDATE habits SET target_per_week = ? WHERE id = ?`).run(targetPerWeek, habitId)
 }
 
 export function updateHabitDetails(habitId: number, name: string, color: string): void {
