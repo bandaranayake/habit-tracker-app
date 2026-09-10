@@ -1,10 +1,12 @@
 import { HABIT_STATUS_COMPLETED, HABIT_STATUS_MISSED, HABIT_STATUS_SKIPPED } from './constant'
-import { daysBetween, formatDate, isSameDate, startOfDay } from './date'
+import { daysBetween, formatDate, isSameDate, startOfDay, startOfWeek, weekKey } from './date'
 import { Habit } from '@/interfaces/habit'
 import { HabitLog } from '@/interfaces/habitLog'
 import { ChartData } from '@/types/chartData'
 
 const STREAK_LOOKBACK_DAYS = 365
+const STREAK_LOOKBACK_WEEKS = 104
+const DAYS_PER_WEEK = 7
 
 /**
  * Parse a `"YYYY-MM-DD"` (or `"YYYY-MM-DD HH:MM:SS"`) string to local midnight of
@@ -18,6 +20,75 @@ const parseLocalDay = (timestamp: string): Date => {
 /** Long streaks earn a multiplier: +10% per consecutive completed day. */
 const streakBonus = (currentStreak: number): number => {
   return 1 + currentStreak / 10
+}
+
+/**
+ * Completed logs per week, keyed by the `formatDate` of the week's Sunday.
+ * Only `HABIT_STATUS_COMPLETED` counts toward a weekly goal; skipped days are
+ * intentional pauses and do not advance the target.
+ */
+const weeklyCompletionCounts = (records: HabitLog[]): Map<string, number> => {
+  const counts = new Map<string, number>()
+  for (const r of records) {
+    if (r.state !== HABIT_STATUS_COMPLETED) continue
+    const key = weekKey(parseLocalDay(r.date))
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  return counts
+}
+
+/**
+ * Current streak, in weeks, for a habit with a weekly goal: consecutive weeks
+ * (ending with the current one) in which at least `target` days were completed.
+ * The in-progress week counts only once its target is already met; before that
+ * it neither adds to nor breaks the streak.
+ */
+const calculateWeeklyStreak = (records: HabitLog[], target: number): number => {
+  const counts = weeklyCompletionCounts(records)
+  const cursor = startOfWeek(new Date())
+
+  let streak = 0
+  for (let i = 0; i < STREAK_LOOKBACK_WEEKS; i++) {
+    const done = counts.get(formatDate(cursor)) ?? 0
+    if (done >= target) {
+      streak++
+    } else if (i === 0) {
+      // current week still in progress - don't count it yet, keep looking back
+    } else {
+      break
+    }
+    cursor.setDate(cursor.getDate() - DAYS_PER_WEEK)
+  }
+
+  return streak
+}
+
+/** Longest run of consecutive weeks that met `target`, anywhere in the history. */
+const getLongestWeeklyStreak = (records: HabitLog[], target: number): number => {
+  const counts = weeklyCompletionCounts(records)
+  if (counts.size === 0) return 0
+
+  const earliest = records
+    .map((r) => r.date)
+    .reduce((min, d) => (d < min ? d : min), records[0].date)
+  const thisWeekStart = startOfWeek(new Date())
+  const cursor = startOfWeek(parseLocalDay(earliest))
+
+  let maxStreak = 0
+  let run = 0
+  while (cursor <= thisWeekStart) {
+    const done = counts.get(formatDate(cursor)) ?? 0
+    const isCurrentWeek = cursor.getTime() === thisWeekStart.getTime()
+    if (done >= target) {
+      run++
+      maxStreak = Math.max(maxStreak, run)
+    } else if (!isCurrentWeek) {
+      run = 0
+    }
+    cursor.setDate(cursor.getDate() + DAYS_PER_WEEK)
+  }
+
+  return maxStreak
 }
 
 /** Recent misses shrink a habit's score: each miss multiplies by 0.9. */
@@ -40,11 +111,20 @@ export const calculateCompletionRate = (records: HabitLog[]): number => {
 }
 
 /**
- * Current streak: consecutive completed days ending today (or yesterday, if
- * today has not been logged yet). A skipped day keeps the streak alive without
- * extending it; a missed day or an unlogged past day ends it.
+ * Current streak. For a daily habit (`targetPerWeek == null`) this is
+ * consecutive completed days ending today (or yesterday, if today has not been
+ * logged yet): a skipped day keeps it alive without extending it; a missed day
+ * or an unlogged past day ends it. For a habit with a weekly goal it is instead
+ * counted in *weeks* that met the target - see `calculateWeeklyStreak`.
  */
-export const calculateStreak = (records: HabitLog[]): number => {
+export const calculateStreak = (
+  records: HabitLog[],
+  targetPerWeek: number | null = null
+): number => {
+  if (targetPerWeek != null) {
+    return calculateWeeklyStreak(records, targetPerWeek)
+  }
+
   const byDate = new Map(records.map((r) => [r.date, r]))
   const today = new Date()
 
@@ -73,8 +153,18 @@ export const calculateStreak = (records: HabitLog[]): number => {
   return streak
 }
 
-/** Longest run of consecutive completed days anywhere in the history. */
-export const getLongestStreak = (records: HabitLog[]): number => {
+/**
+ * Longest streak ever: consecutive completed days for a daily habit, or
+ * consecutive weeks that met the target for a habit with a weekly goal.
+ */
+export const getLongestStreak = (
+  records: HabitLog[],
+  targetPerWeek: number | null = null
+): number => {
+  if (targetPerWeek != null) {
+    return getLongestWeeklyStreak(records, targetPerWeek)
+  }
+
   const sorted = [...records].sort((a, b) => a.date.localeCompare(b.date))
 
   let maxStreak = 0
@@ -107,11 +197,15 @@ export const getLongestStreak = (records: HabitLog[]): number => {
  * For a habit on a given day (from its first log onward) with running counters
  * `completed` / `streak` / `misses` and `daysTracked` days since its first log:
  *
- *   habitScore = min(1, completed/daysTracked * 0.9^misses * (1 + streak/10))
+ *   expected  = daysTracked * (target_per_week ?? 7) / 7
+ *   adherence = min(1, completed / expected)
+ *   habitScore = min(1, adherence * 0.9^misses * (1 + streak/10))
  *
- * i.e. a 0..1 "consistency" number: the completion ratio, nudged down by recent
- * misses and up (recovering toward 1) by the current streak. A perfectly kept
- * habit sits at 1.0.
+ * i.e. a 0..1 "consistency" number: how much of the *expected* volume was done
+ * (a daily habit expects one completion per day; a "3×/week" habit expects
+ * three, so its off days are not held against it), nudged down by recent misses
+ * and up by the current streak. A perfectly kept habit sits at 1.0. The streak
+ * bonus is daily-only - for a weekly goal the day-level streak is not meaningful.
  *
  * The overall day score is the weight-weighted mean of the habitScores of every
  * habit in tracking that day (0 when none are), rounded to 3 decimals. Because
@@ -175,10 +269,11 @@ export const calculateTotalScores = (habits: Habit[], logs: HabitLog[]): ChartDa
       // so sparse logging decays the habit's score.
 
       const daysTracked = daysBetween(start, cursorDay) + 1
-      const habitScore = Math.min(
-        1,
-        (state.completed / daysTracked) * missPenalty(state.misses) * streakBonus(state.streak)
-      )
+      const perWeek = habit.target_per_week ?? DAYS_PER_WEEK
+      const expected = (daysTracked * perWeek) / DAYS_PER_WEEK
+      const adherence = Math.min(1, state.completed / expected)
+      const bonus = habit.target_per_week == null ? streakBonus(state.streak) : 1
+      const habitScore = Math.min(1, adherence * missPenalty(state.misses) * bonus)
 
       weightedScore += habitScore * habit.weight
       totalWeight += habit.weight

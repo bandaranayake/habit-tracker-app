@@ -44,6 +44,19 @@ export const daysBetween = (from: Date, to: Date): number => {
 }
 
 /**
+ * Local midnight of the Sunday that starts `date`'s week. Matches the
+ * Sunday-first calendar grid (configurable first-day-of-week is a later change).
+ */
+export const startOfWeek = (date: Date): Date => {
+  const d = startOfDay(date)
+  d.setDate(d.getDate() - d.getDay())
+  return d
+}
+
+/** `"YYYY-MM-DD"` key for the Sunday that starts `date`'s week. */
+export const weekKey = (date: Date): string => formatDate(startOfWeek(date))
+
+/**
  * The cells of a month grid: leading `null`s to pad to the first weekday
  * (Sunday = 0), then one `Date` per day of the month.
  */

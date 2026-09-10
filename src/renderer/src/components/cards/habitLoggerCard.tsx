@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Habit } from '@/interfaces/habit'
 import { HabitLog } from '@/interfaces/habitLog'
 import { HABIT_STATUS_COMPLETED, HABIT_STATUS_MISSED, HABIT_STATUS_SKIPPED } from '@/utils/constant'
-import { formatDate, formatDisplayDate } from '@/utils/date'
+import { formatDate, formatDisplayDate, weekKey } from '@/utils/date'
 
 interface HabitLoggerCardProps {
   selectedDate: Date | null
@@ -59,11 +59,27 @@ export const HabitLoggerCard = ({
               const dateString = formatDate(selectedDate)
               const record = records.find((r) => r.habit_id === habit.id && r.date === dateString)
               const state = record?.state ?? 0
+
+              let weekProgress: string | null = null
+              if (habit.target_per_week != null) {
+                const selectedWeek = weekKey(selectedDate)
+                const doneThisWeek = records.filter(
+                  (r) =>
+                    r.habit_id === habit.id &&
+                    r.state === HABIT_STATUS_COMPLETED &&
+                    weekKey(new Date(`${r.date}T00:00:00`)) === selectedWeek
+                ).length
+                weekProgress = `${doneThisWeek}/${habit.target_per_week} this week`
+              }
+
               return (
                 <div key={habit.id} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className={`w-3 h-3 rounded-full ${habit.color}`} />
                     <span className="font-medium">{habit.name}</span>
+                    {weekProgress && (
+                      <span className="text-xs text-muted-foreground">({weekProgress})</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-1">
                     {stateButtons.map((btn) => (

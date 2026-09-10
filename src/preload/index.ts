@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('habitAPI', {
   ) => ipcRenderer.invoke('update-habit', habitId, current_streak, longest_streak, completion_rate),
   setHabitWeight: (habitId: number, weight: number) =>
     ipcRenderer.invoke('set-habit-weight', habitId, weight),
+  setHabitTarget: (habitId: number, targetPerWeek: number | null) =>
+    ipcRenderer.invoke('set-habit-target', habitId, targetPerWeek),
   updateHabitDetails: (habitId: number, name: string, color: string) =>
     ipcRenderer.invoke('update-habit-details', habitId, name, color),
   updateHabitLog: (habitId: number, date: string, state: number) =>

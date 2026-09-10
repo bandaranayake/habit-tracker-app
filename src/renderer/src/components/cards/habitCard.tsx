@@ -4,12 +4,19 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Habit } from '@/interfaces/habit'
-import { HABIT_COLORS, HABIT_WEIGHTS } from '@/utils/constant'
+import { HABIT_COLORS, HABIT_TARGET_OPTIONS, HABIT_WEIGHTS } from '@/utils/constant'
+
+/** Streaks are counted in days for daily habits and in weeks for weekly goals. */
+const streakUnit = (habit: Habit, count: number): string => {
+  const unit = habit.target_per_week == null ? 'day' : 'week'
+  return count === 1 ? unit : `${unit}s`
+}
 
 interface HabitCardProps {
   habit: Habit
   removeHabit: (id: number) => void
   setHabitWeight: (id: number, weight: number) => void
+  setHabitTarget: (id: number, targetPerWeek: number | null) => void
   editHabit: (id: number, name: string, color: string) => void
 }
 
@@ -17,6 +24,7 @@ export const HabitCard = ({
   habit,
   removeHabit,
   setHabitWeight,
+  setHabitTarget,
   editHabit
 }: HabitCardProps): JSX.Element => {
   const [isEditing, setIsEditing] = useState(false)
@@ -90,9 +98,28 @@ export const HabitCard = ({
         <div className={`w-4 h-4 rounded-full ${habit.color}`} />
         <div>
           <h3 className="font-medium">{habit.name}</h3>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>Best: {habit.longest_streak} days</span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+            <span>
+              Best: {habit.longest_streak} {streakUnit(habit, habit.longest_streak)}
+            </span>
             <span>Rate: {habit.completion_rate}%</span>
+            <label className="flex items-center gap-1">
+              Goal:
+              <select
+                className="bg-transparent border rounded px-1 py-0.5 text-foreground"
+                value={habit.target_per_week ?? ''}
+                onChange={(e) =>
+                  setHabitTarget(habit.id, e.target.value === '' ? null : Number(e.target.value))
+                }
+                title="How often you aim to complete this habit"
+              >
+                {HABIT_TARGET_OPTIONS.map((opt) => (
+                  <option key={opt.label} value={opt.value ?? ''}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <label className="flex items-center gap-1">
               Weight:
               <select
@@ -113,8 +140,13 @@ export const HabitCard = ({
       </div>
       <div className="flex items-center gap-2">
         {habit.current_streak > 0 && (
-          <Badge variant="secondary" className="bg-green-100 text-green-800">
+          <Badge
+            variant="secondary"
+            className="bg-green-100 text-green-800"
+            title={`${habit.current_streak}-${streakUnit(habit, habit.current_streak)} streak`}
+          >
             🔥 {habit.current_streak}
+            {habit.target_per_week == null ? '' : 'w'}
           </Badge>
         )}
         <Button
