@@ -1,8 +1,19 @@
 import { useState } from 'react'
-import { Check, Pencil, Trash2, X } from 'lucide-react'
+import { Archive, Check, Pencil, Trash2, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '@/components/ui/alert-dialog'
 import { Habit } from '@/interfaces/habit'
 import { HABIT_COLORS, HABIT_TARGET_OPTIONS, HABIT_WEIGHTS } from '@/utils/constant'
 
@@ -15,6 +26,7 @@ const streakUnit = (habit: Habit, count: number): string => {
 interface HabitCardProps {
   habit: Habit
   removeHabit: (id: number) => void
+  archiveHabit: (id: number) => void
   setHabitWeight: (id: number, weight: number) => void
   setHabitTarget: (id: number, targetPerWeek: number | null) => void
   editHabit: (id: number, name: string, color: string) => void
@@ -23,6 +35,7 @@ interface HabitCardProps {
 export const HabitCard = ({
   habit,
   removeHabit,
+  archiveHabit,
   setHabitWeight,
   setHabitTarget,
   editHabit
@@ -161,12 +174,37 @@ export const HabitCard = ({
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
-          onClick={() => removeHabit(habit.id)}
-          title="Delete habit"
+          className="h-8 w-8 p-0"
+          onClick={() => archiveHabit(habit.id)}
+          title="Archive habit (stop tracking, keep history)"
         >
-          <Trash2 className="w-4 h-4" />
+          <Archive className="w-4 h-4" />
         </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
+              title="Delete habit"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete &ldquo;{habit.name}&rdquo;?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This removes the habit and its entire history. You can undo for a few seconds
+                afterwards. To keep the history, archive it instead.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => removeHabit(habit.id)}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   )

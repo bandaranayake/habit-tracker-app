@@ -5,10 +5,7 @@ tested and merged before the next starts. Branches are listed in build order.
 
 ## Now
 
-- [ ] `feature/habit-lifecycle` — delete safety + archiving
-  - [ ] Delete confirmation + undo. `@radix-ui/react-alert-dialog` is already a dependency but unused; deletes are currently immediate and unrecoverable.
-  - [ ] Archive vs. delete — stop tracking a habit without losing its history, plus a view of archived habits. (`status = 0` already exists for deletes; add `status = 2` for archived and surface it.)
-  - [ ] "Mark all done for today" bulk action from the logger.
+_Between branches — `feature/reorder-habits` is up next._
 
 ## Next
 
@@ -27,4 +24,5 @@ tested and merged before the next starts. Branches are listed in build order.
 
 ## Done
 
+- [x] `feature/habit-lifecycle` — Delete confirmation dialog + deferred delete with an undo snackbar; archive/unarchive habits (`status = 2`) with a collapsible archived section; "Mark all done" bulk action in the logger.
 - [x] `feature/habit-goals` — Per-habit goal / target frequency ("N× per week") with score and streak logic that respects it. Off days no longer penalised; weekly-goal habits track streaks in weeks.

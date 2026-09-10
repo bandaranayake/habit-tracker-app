@@ -35,9 +35,12 @@ export const CalendarCard = ({
   const days = getDaysInMonth(currentDate)
   const monthYear = getLocaleDateString(currentDate)
 
+  const habitIds = new Set(habits.map((h) => h.id))
+
   const getDayProgress = (date: Date): { completed: number; total: number } => {
     const dateString = formatDate(date)
-    const dayRecords = records.filter((r) => r.date === dateString)
+    // Restrict to the habits shown here (excludes archived habits' lingering logs).
+    const dayRecords = records.filter((r) => r.date === dateString && habitIds.has(r.habit_id))
     const completed = dayRecords.filter(
       (r) => r.state === HABIT_STATUS_COMPLETED || r.state === HABIT_STATUS_SKIPPED
     ).length

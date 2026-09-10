@@ -23,6 +23,8 @@ declare global {
       updateHabitDetails: (habitId: number, name: string, color: string) => Promise<void>
       updateHabitLog: (habitId: number, date: string, state: number) => Promise<void>
       removeHabit: (habitId: number) => Promise<void>
+      archiveHabit: (habitId: number) => Promise<void>
+      unarchiveHabit: (habitId: number) => Promise<void>
       saltExists: () => Promise<boolean>
       dbExists: () => Promise<boolean>
       createDatabase: (password: string) => Promise<DbResult>

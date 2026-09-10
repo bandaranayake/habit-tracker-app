@@ -1,6 +1,12 @@
+// Log-entry states (the `state` column on habit_logs).
 export const HABIT_STATUS_MISSED = 1
 export const HABIT_STATUS_COMPLETED = 2
 export const HABIT_STATUS_SKIPPED = 3
+
+// Habit row lifecycle (the `status` column on habits). Deleted rows (0) never
+// reach the renderer.
+export const HABIT_ACTIVE = 1
+export const HABIT_ARCHIVED = 2
 
 export const HABIT_COLORS = [
   'bg-blue-500',

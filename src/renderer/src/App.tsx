@@ -1,9 +1,14 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import LockScreen from './components/LockScreen'
 import { CardHeader, CardTitle, Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { getAdjacentMonth } from './utils/date'
-import { HABIT_COLORS } from './utils/constant'
+import {
+  HABIT_ACTIVE,
+  HABIT_ARCHIVED,
+  HABIT_COLORS,
+  HABIT_STATUS_COMPLETED
+} from './utils/constant'
 import { HabitLog } from './interfaces/habitLog'
 import { Habit } from './interfaces/habit'
 import { LoadingSpinner } from '@/components/ui/loadingSpinner'
@@ -15,10 +20,20 @@ import {
 } from './utils/math'
 import { HabitCard } from '@/components/cards/habitCard'
 import { AddHabitCard } from '@/components/cards/addHabitCard'
+import { ArchivedHabitsCard } from '@/components/cards/archivedHabitsCard'
 import { CalendarCard } from '@/components/cards/calendarCard'
 import { HabitLoggerCard } from '@/components/cards/habitLoggerCard'
+import { UndoSnackbar } from '@/components/UndoSnackbar'
 import BarChart from './components/chart/chart-bar-interactive'
 import { ChartData } from './types/chartData'
+
+/** How long the "Habit deleted" undo prompt stays before the delete is committed. */
+const DELETE_UNDO_MS = 6000
+
+interface PendingDelete {
+  habit: Habit
+  records: HabitLog[]
+}
 
 /** Recompute a habit's cached stats from the full log set. */
 const withRecomputedStats = (habit: Habit, allRecords: HabitLog[]): Habit => {
@@ -46,6 +61,11 @@ function App(): JSX.Element {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date())
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
+  const deleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const activeHabits = useMemo(() => habits.filter((h) => h.status === HABIT_ACTIVE), [habits])
+  const archivedHabits = useMemo(() => habits.filter((h) => h.status === HABIT_ARCHIVED), [habits])
 
   const loadHabits = useCallback(async (): Promise<void> => {
     setIsLoading(true)
@@ -92,9 +112,16 @@ function App(): JSX.Element {
 
   useEffect(() => {
     if (!isLoading && !loadError) {
-      setChartData(calculateTotalScores(habits, records))
+      setChartData(calculateTotalScores(activeHabits, records))
     }
-  }, [isLoading, loadError, records, habits])
+  }, [isLoading, loadError, records, activeHabits])
+
+  // Clear a still-running undo timer if the component goes away.
+  useEffect(() => {
+    return (): void => {
+      if (deleteTimer.current) clearTimeout(deleteTimer.current)
+    }
+  }, [])
 
   if (!unlocked) {
     return <LockScreen onUnlock={() => setUnlocked(true)} />
@@ -105,20 +132,78 @@ function App(): JSX.Element {
     if (!habitName) return
 
     window.habitAPI
-      .addHabit(habitName, HABIT_COLORS[habits.length % HABIT_COLORS.length])
+      .addHabit(habitName, HABIT_COLORS[activeHabits.length % HABIT_COLORS.length])
       .then(() => loadHabits())
       .then(() => setNewHabitName(''))
       .catch((error) => console.error(error))
   }
 
+  const commitDelete = (habitId: number): void => {
+    window.habitAPI.removeHabit(habitId).catch((error) => {
+      console.error(error)
+      loadHabits()
+    })
+  }
+
+  const clearDeleteTimer = (): void => {
+    if (deleteTimer.current) {
+      clearTimeout(deleteTimer.current)
+      deleteTimer.current = null
+    }
+  }
+
+  // Deferred delete: the habit leaves the UI immediately, but the database
+  // soft-delete only fires once the undo window closes.
   const removeHabit = (habitId: number): void => {
-    window.habitAPI
-      .removeHabit(habitId)
-      .then(() => {
-        setHabits((prev) => prev.filter((h) => h.id !== habitId))
-        setRecords((prev) => prev.filter((r) => r.habit_id !== habitId))
-      })
-      .catch((error) => console.error(error))
+    // Only one delete can be pending; commit any earlier one first.
+    clearDeleteTimer()
+    if (pendingDelete) commitDelete(pendingDelete.habit.id)
+
+    const habit = habits.find((h) => h.id === habitId)
+    if (!habit) return
+    const habitRecords = records.filter((r) => r.habit_id === habitId)
+
+    setHabits((prev) => prev.filter((h) => h.id !== habitId))
+    setRecords((prev) => prev.filter((r) => r.habit_id !== habitId))
+    setPendingDelete({ habit, records: habitRecords })
+
+    deleteTimer.current = setTimeout(() => {
+      deleteTimer.current = null
+      setPendingDelete(null)
+      commitDelete(habitId)
+    }, DELETE_UNDO_MS)
+  }
+
+  const undoDelete = (): void => {
+    if (!pendingDelete) return
+    clearDeleteTimer()
+    const { habit, records: restored } = pendingDelete
+    setHabits((prev) => [...prev, habit].sort((a, b) => a.id - b.id))
+    setRecords((prev) => [...prev, ...restored])
+    setPendingDelete(null)
+  }
+
+  const dismissDelete = (): void => {
+    if (!pendingDelete) return
+    clearDeleteTimer()
+    commitDelete(pendingDelete.habit.id)
+    setPendingDelete(null)
+  }
+
+  const archiveHabit = (habitId: number): void => {
+    setHabits((prev) => prev.map((h) => (h.id === habitId ? { ...h, status: HABIT_ARCHIVED } : h)))
+    window.habitAPI.archiveHabit(habitId).catch((error) => {
+      console.error(error)
+      loadHabits()
+    })
+  }
+
+  const unarchiveHabit = (habitId: number): void => {
+    setHabits((prev) => prev.map((h) => (h.id === habitId ? { ...h, status: HABIT_ACTIVE } : h)))
+    window.habitAPI.unarchiveHabit(habitId).catch((error) => {
+      console.error(error)
+      loadHabits()
+    })
   }
 
   const setHabitWeight = (habitId: number, weight: number): void => {
@@ -203,6 +288,16 @@ function App(): JSX.Element {
       .catch((error) => console.error(error))
   }
 
+  const markAllComplete = (date: string): void => {
+    if (!date) return
+    activeHabits.forEach((habit) => {
+      const record = records.find((r) => r.habit_id === habit.id && r.date === date)
+      if (record?.state !== HABIT_STATUS_COMPLETED) {
+        updateHabitRecord(habit, date, HABIT_STATUS_COMPLETED)
+      }
+    })
+  }
+
   const navigateMonth = (direction: 'prev' | 'next'): void => {
     setCurrentDate((prev) => getAdjacentMonth(prev, direction))
   }
@@ -236,38 +331,51 @@ function App(): JSX.Element {
           <Card>
             <CardContent>
               <div className="space-y-3">
-                {habits.map((habit) => (
+                {activeHabits.map((habit) => (
                   <HabitCard
                     key={habit.id}
                     habit={habit}
                     removeHabit={removeHabit}
+                    archiveHabit={archiveHabit}
                     setHabitWeight={setHabitWeight}
                     setHabitTarget={setHabitTarget}
                     editHabit={editHabit}
                   />
                 ))}
-                {habits.length === 0 && (
+                {activeHabits.length === 0 && (
                   <p className="text-center text-muted-foreground py-4">
-                    No habits yet. Add your first habit above!
+                    {archivedHabits.length > 0
+                      ? 'No active habits. Unarchive one below or add a new habit above.'
+                      : 'No habits yet. Add your first habit above!'}
                   </p>
                 )}
               </div>
             </CardContent>
           </Card>
+
+          {archivedHabits.length > 0 && (
+            <ArchivedHabitsCard
+              habits={archivedHabits}
+              onUnarchive={unarchiveHabit}
+              onDelete={removeHabit}
+            />
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <CalendarCard
               currentDate={currentDate}
               selectedDate={selectedDate}
-              habits={habits}
+              habits={activeHabits}
               records={records}
               onNavigateMonth={navigateMonth}
               onSelectDate={setSelectedDate}
             />
             <HabitLoggerCard
               selectedDate={selectedDate}
-              habits={habits}
+              habits={activeHabits}
               records={records}
               onUpdateRecord={updateHabitRecord}
+              onMarkAllComplete={markAllComplete}
             />
           </div>
           <div className="mt-12">
@@ -279,6 +387,14 @@ function App(): JSX.Element {
             />
           </div>
         </div>
+      )}
+
+      {pendingDelete && (
+        <UndoSnackbar
+          message={`Deleted "${pendingDelete.habit.name}"`}
+          onUndo={undoDelete}
+          onDismiss={dismissDelete}
+        />
       )}
     </div>
   )

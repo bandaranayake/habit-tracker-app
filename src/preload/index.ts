@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld('habitAPI', {
   updateHabitLog: (habitId: number, date: string, state: number) =>
     ipcRenderer.invoke('update-habit-log', habitId, date, state),
   removeHabit: (habitId: number) => ipcRenderer.invoke('remove-habit', habitId),
+  archiveHabit: (habitId: number) => ipcRenderer.invoke('archive-habit', habitId),
+  unarchiveHabit: (habitId: number) => ipcRenderer.invoke('unarchive-habit', habitId),
   saltExists: () => ipcRenderer.invoke('salt-exists'),
   dbExists: () => ipcRenderer.invoke('db-exists'),
   createDatabase: (password: string) => ipcRenderer.invoke('create-database', password),
