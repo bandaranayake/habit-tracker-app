@@ -16,32 +16,34 @@ server, and no network sync.
 
 ## Requirements
 
-- Node.js 20+
-- On first `npm install`, native modules are rebuilt for Electron
+- Node.js 22.13+ (required by the pinned pnpm version)
+- [pnpm](https://pnpm.io) (the repo pins a version via `packageManager`; run
+  `corepack enable` and it is fetched automatically)
+- On first `pnpm install`, native modules are rebuilt for Electron
   (`electron-builder install-app-deps`), which needs a working C/C++ toolchain.
 
 ## Development
 
 ```bash
-npm install      # install deps and rebuild native modules
-npm run dev       # start the app with hot reload and DevTools
+pnpm install     # install deps and rebuild native modules
+pnpm dev          # start the app with hot reload and DevTools
 ```
 
 ## Quality checks
 
 ```bash
-npm run typecheck   # tsc for the main/preload and renderer projects
-npm run lint         # eslint --fix
-npm run format       # prettier --write .
+pnpm typecheck   # tsc for the main/preload and renderer projects
+pnpm lint         # eslint --fix
+pnpm format       # prettier --write .
 ```
 
 ## Building
 
 ```bash
-npm run build         # typecheck + bundle
-npm run build:win     # Windows NSIS installer
-npm run build:mac     # macOS dmg
-npm run build:linux   # AppImage / snap / deb
+pnpm build            # typecheck + bundle
+pnpm build:win        # Windows NSIS installer
+pnpm build:mac        # macOS dmg
+pnpm build:linux      # AppImage / snap / deb
 ```
 
 ## Data location

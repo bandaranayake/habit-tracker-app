@@ -15,8 +15,8 @@ process.stdin.on('end', () => {
   }
   if (!file) return
 
-  const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx'
-  spawnSync(npx, ['prettier', '--write', '--ignore-unknown', file], {
+  const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+  spawnSync(pnpm, ['exec', 'prettier', '--write', '--ignore-unknown', file], {
     stdio: 'ignore',
     shell: process.platform === 'win32'
   })
