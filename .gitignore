@@ -4,3 +4,6 @@ out
 build
 .DS_Store
 *.log*
+
+# Local-only working notes for AI coding sessions
+CLAUDE.md

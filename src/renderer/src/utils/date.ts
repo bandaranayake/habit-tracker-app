@@ -1,7 +1,19 @@
-import moment from 'moment'
+/**
+ * Local-time date helpers. All storage/lookup keys use the `"YYYY-MM-DD"` form
+ * produced by `formatDate`, computed from the machine's local calendar day.
+ */
+
+export const startOfDay = (date: Date): Date => {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
 
 export const formatDate = (date: Date): string => {
-  return moment(date).format('YYYY-MM-DD')
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 export const formatDisplayDate = (date: Date): string => {
@@ -14,30 +26,39 @@ export const formatDisplayDate = (date: Date): string => {
 }
 
 export const isToday = (date: Date): boolean => {
-  const today = new Date()
-  return date.toDateString() === today.toDateString()
+  return isSameDate(date, new Date())
 }
 
 export const isFutureDate = (date: Date): boolean => {
-  return date.getTime() > new Date().getTime()
+  return startOfDay(date).getTime() > startOfDay(new Date()).getTime()
 }
 
 export const isSameDate = (date1: Date | null, date2: Date): boolean => {
   if (!date1) return false
-  return date1.toDateString() === date2.toDateString()
+  return formatDate(date1) === formatDate(date2)
 }
 
-export const getDaysInMonth = (date: Date): (Date | null)[] => {
-  const days: (Date | null)[] = []
-  const mDate = moment(date).startOf('month')
-  const daysInMonth = mDate.daysInMonth()
-  const startingDayOfWeek = mDate.day()
+/** Whole calendar days from `from` to `to` (can be negative). */
+export const daysBetween = (from: Date, to: Date): number => {
+  return Math.round((startOfDay(to).getTime() - startOfDay(from).getTime()) / 86_400_000)
+}
 
+/**
+ * The cells of a month grid: leading `null`s to pad to the first weekday
+ * (Sunday = 0), then one `Date` per day of the month.
+ */
+export const getDaysInMonth = (date: Date): (Date | null)[] => {
+  const year = date.getFullYear()
+  const month = date.getMonth()
+  const startingDayOfWeek = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+
+  const days: (Date | null)[] = []
   for (let i = 0; i < startingDayOfWeek; i++) {
     days.push(null)
   }
-  for (let i = 0; i < daysInMonth; i++) {
-    days.push(mDate.clone().add(i, 'days').toDate())
+  for (let i = 1; i <= daysInMonth; i++) {
+    days.push(new Date(year, month, i))
   }
 
   return days
@@ -49,10 +70,7 @@ export const getLocaleDateString = (date: Date): string => {
 
 export const getAdjacentMonth = (date: Date, direction: 'prev' | 'next'): Date => {
   const newDate = new Date(date)
-  if (direction === 'prev') {
-    newDate.setMonth(date.getMonth() - 1)
-  } else {
-    newDate.setMonth(date.getMonth() + 1)
-  }
+  newDate.setDate(1)
+  newDate.setMonth(date.getMonth() + (direction === 'prev' ? -1 : 1))
   return newDate
 }

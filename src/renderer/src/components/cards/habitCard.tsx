@@ -2,23 +2,40 @@ import { Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Habit } from '@/interfaces/habit'
+import { HABIT_WEIGHTS } from '@/utils/constant'
 
 export const HabitCard = ({
   habit,
-  removeHabit
+  removeHabit,
+  setHabitWeight
 }: {
   habit: Habit
-  removeHabit: (val: number) => void
+  removeHabit: (id: number) => void
+  setHabitWeight: (id: number, weight: number) => void
 }): JSX.Element => (
-  <div key={habit.id} className="flex items-center justify-between p-3 border rounded-lg">
+  <div className="flex items-center justify-between p-3 border rounded-lg">
     <div className="flex items-center gap-3">
       <div className={`w-4 h-4 rounded-full ${habit.color}`} />
       <div>
         <h3 className="font-medium">{habit.name}</h3>
-        <div className="flex gap-4 text-sm text-muted-foreground">
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <span>Best: {habit.longest_streak} days</span>
           <span>Rate: {habit.completion_rate}%</span>
-          <span>Weight: {habit.weight}</span>
+          <label className="flex items-center gap-1">
+            Weight:
+            <select
+              className="bg-transparent border rounded px-1 py-0.5 text-foreground"
+              value={habit.weight}
+              onChange={(e) => setHabitWeight(habit.id, Number(e.target.value))}
+              title="How much this habit counts toward your overall score"
+            >
+              {HABIT_WEIGHTS.map((w) => (
+                <option key={w} value={w}>
+                  {w}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </div>
     </div>

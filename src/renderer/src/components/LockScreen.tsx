@@ -7,6 +7,8 @@ interface LockScreenProps {
   onUnlock: () => void
 }
 
+const MIN_PASSWORD_LENGTH = 8
+
 const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -15,14 +17,14 @@ const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
   const [mode, setMode] = useState<'create' | 'unlock' | null>(null)
 
   React.useEffect(() => {
-    ; (async (): Promise<void> => {
+    ;(async (): Promise<void> => {
       const saltExists = await window.habitAPI.saltExists()
       const dbExists = await window.habitAPI.dbExists()
 
-      if (!saltExists && !dbExists) {
-        setMode('create')
-      } else if (saltExists) {
+      if (dbExists && saltExists) {
         setMode('unlock')
+      } else {
+        setMode('create')
       }
     })()
   }, [])
@@ -30,8 +32,8 @@ const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
   const handleCreate = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
 
-    if (!password) {
-      setError('Password cannot be empty')
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
       return
     }
 
@@ -42,13 +44,7 @@ const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
 
     try {
       setLoading(true)
-
-      await window.habitAPI.createSalt()
-
-      const key = await window.habitAPI.deriveKey(password)
-      if (!key) throw new Error('Failed to derive key')
-
-      const { success, error } = await window.habitAPI.createEncryptedDb(key)
+      const { success, error } = await window.habitAPI.createDatabase(password)
 
       if (success) {
         setError('')
@@ -73,11 +69,7 @@ const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
 
     try {
       setLoading(true)
-
-      const key = await window.habitAPI.deriveKey(password)
-      if (!key) throw new Error('Failed to derive key')
-
-      const { success, error } = await window.habitAPI.openEncryptedDb(key)
+      const { success, error } = await window.habitAPI.unlockDatabase(password)
 
       if (success) {
         setError('')
@@ -120,6 +112,9 @@ const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={loading}
               />
+              <p className="text-muted-foreground text-xs text-center">
+                Your data is encrypted with this password and cannot be recovered if you forget it.
+              </p>
               {error && <div className="text-destructive text-sm text-center">{error}</div>}
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Creating...' : 'Create'}
