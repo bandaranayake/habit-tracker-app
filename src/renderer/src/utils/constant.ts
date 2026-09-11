@@ -37,3 +37,39 @@ export const HABIT_TARGET_OPTIONS: { value: number | null; label: string }[] = [
 /** Short label for a habit's goal, e.g. `"3×/week"` or `"Daily"`. */
 export const formatTarget = (targetPerWeek: number | null): string =>
   targetPerWeek == null ? 'Daily' : `${targetPerWeek}×/week`
+
+// --- App preferences (persisted in the `settings` key/value table) ---------
+
+export type ThemePreference = 'light' | 'dark' | 'system'
+export type DateFormatPreference = 'long' | 'iso' | 'us' | 'eu'
+
+/** Keys under which each preference is stored in the `settings` table. */
+export const SETTINGS_KEYS = {
+  theme: 'theme',
+  firstDayOfWeek: 'first_day_of_week',
+  dateFormat: 'date_format'
+} as const
+
+export const DEFAULT_THEME: ThemePreference = 'system'
+/** 0 = Sunday, 1 = Monday - matches `Date#getDay()`. */
+export const DEFAULT_FIRST_DAY_OF_WEEK = 0
+export const DEFAULT_DATE_FORMAT: DateFormatPreference = 'long'
+
+export const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
+  { value: 'system', label: 'Match system' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' }
+]
+
+export const FIRST_DAY_OF_WEEK_OPTIONS: { value: number; label: string }[] = [
+  { value: 0, label: 'Sunday' },
+  { value: 1, label: 'Monday' }
+]
+
+export const DATE_FORMAT_OPTIONS: { value: DateFormatPreference; label: string; sample: string }[] =
+  [
+    { value: 'long', label: 'Long', sample: 'Tuesday, January 6, 2026' },
+    { value: 'us', label: 'US (M/D/YYYY)', sample: '1/6/2026' },
+    { value: 'eu', label: 'EU (D/M/YYYY)', sample: '6/1/2026' },
+    { value: 'iso', label: 'ISO (YYYY-MM-DD)', sample: '2026-01-06' }
+  ]

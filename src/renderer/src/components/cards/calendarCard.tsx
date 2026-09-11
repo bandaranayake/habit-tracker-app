@@ -18,6 +18,8 @@ interface CalendarCardProps {
   selectedDate: Date | null
   habits: Habit[]
   records: HabitLog[]
+  /** 0 = Sunday, 1 = Monday - which weekday starts each row. */
+  firstDayOfWeek: number
   onNavigateMonth: (direction: 'prev' | 'next') => void
   onSelectDate: (date: Date) => void
 }
@@ -29,10 +31,12 @@ export const CalendarCard = ({
   selectedDate,
   habits,
   records,
+  firstDayOfWeek,
   onNavigateMonth,
   onSelectDate
 }: CalendarCardProps): JSX.Element => {
-  const days = getDaysInMonth(currentDate)
+  const days = getDaysInMonth(currentDate, firstDayOfWeek)
+  const weekdays = [...WEEKDAYS.slice(firstDayOfWeek), ...WEEKDAYS.slice(0, firstDayOfWeek)]
   const monthYear = getLocaleDateString(currentDate)
 
   const habitIds = new Set(habits.map((h) => h.id))
@@ -72,7 +76,7 @@ export const CalendarCard = ({
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-7 gap-2 mb-4">
-          {WEEKDAYS.map((day) => (
+          {weekdays.map((day) => (
             <div key={day} className="text-center font-medium text-sm text-muted-foreground p-2">
               {day}
             </div>

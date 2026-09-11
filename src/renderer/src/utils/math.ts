@@ -23,15 +23,18 @@ const streakBonus = (currentStreak: number): number => {
 }
 
 /**
- * Completed logs per week, keyed by the `formatDate` of the week's Sunday.
- * Only `HABIT_STATUS_COMPLETED` counts toward a weekly goal; skipped days are
- * intentional pauses and do not advance the target.
+ * Completed logs per week, keyed by the `formatDate` of the week's first day
+ * (per `firstDayOfWeek`). Only `HABIT_STATUS_COMPLETED` counts toward a weekly
+ * goal; skipped days are intentional pauses and do not advance the target.
  */
-const weeklyCompletionCounts = (records: HabitLog[]): Map<string, number> => {
+const weeklyCompletionCounts = (
+  records: HabitLog[],
+  firstDayOfWeek: number
+): Map<string, number> => {
   const counts = new Map<string, number>()
   for (const r of records) {
     if (r.state !== HABIT_STATUS_COMPLETED) continue
-    const key = weekKey(parseLocalDay(r.date))
+    const key = weekKey(parseLocalDay(r.date), firstDayOfWeek)
     counts.set(key, (counts.get(key) ?? 0) + 1)
   }
   return counts
@@ -43,9 +46,13 @@ const weeklyCompletionCounts = (records: HabitLog[]): Map<string, number> => {
  * The in-progress week counts only once its target is already met; before that
  * it neither adds to nor breaks the streak.
  */
-const calculateWeeklyStreak = (records: HabitLog[], target: number): number => {
-  const counts = weeklyCompletionCounts(records)
-  const cursor = startOfWeek(new Date())
+const calculateWeeklyStreak = (
+  records: HabitLog[],
+  target: number,
+  firstDayOfWeek: number
+): number => {
+  const counts = weeklyCompletionCounts(records, firstDayOfWeek)
+  const cursor = startOfWeek(new Date(), firstDayOfWeek)
 
   let streak = 0
   for (let i = 0; i < STREAK_LOOKBACK_WEEKS; i++) {
@@ -64,15 +71,19 @@ const calculateWeeklyStreak = (records: HabitLog[], target: number): number => {
 }
 
 /** Longest run of consecutive weeks that met `target`, anywhere in the history. */
-const getLongestWeeklyStreak = (records: HabitLog[], target: number): number => {
-  const counts = weeklyCompletionCounts(records)
+const getLongestWeeklyStreak = (
+  records: HabitLog[],
+  target: number,
+  firstDayOfWeek: number
+): number => {
+  const counts = weeklyCompletionCounts(records, firstDayOfWeek)
   if (counts.size === 0) return 0
 
   const earliest = records
     .map((r) => r.date)
     .reduce((min, d) => (d < min ? d : min), records[0].date)
-  const thisWeekStart = startOfWeek(new Date())
-  const cursor = startOfWeek(parseLocalDay(earliest))
+  const thisWeekStart = startOfWeek(new Date(), firstDayOfWeek)
+  const cursor = startOfWeek(parseLocalDay(earliest), firstDayOfWeek)
 
   let maxStreak = 0
   let run = 0
@@ -119,10 +130,11 @@ export const calculateCompletionRate = (records: HabitLog[]): number => {
  */
 export const calculateStreak = (
   records: HabitLog[],
-  targetPerWeek: number | null = null
+  targetPerWeek: number | null = null,
+  firstDayOfWeek = 0
 ): number => {
   if (targetPerWeek != null) {
-    return calculateWeeklyStreak(records, targetPerWeek)
+    return calculateWeeklyStreak(records, targetPerWeek, firstDayOfWeek)
   }
 
   const byDate = new Map(records.map((r) => [r.date, r]))
@@ -159,10 +171,11 @@ export const calculateStreak = (
  */
 export const getLongestStreak = (
   records: HabitLog[],
-  targetPerWeek: number | null = null
+  targetPerWeek: number | null = null,
+  firstDayOfWeek = 0
 ): number => {
   if (targetPerWeek != null) {
-    return getLongestWeeklyStreak(records, targetPerWeek)
+    return getLongestWeeklyStreak(records, targetPerWeek, firstDayOfWeek)
   }
 
   const sorted = [...records].sort((a, b) => a.date.localeCompare(b.date))

@@ -2,6 +2,7 @@
  * Local-time date helpers. All storage/lookup keys use the `"YYYY-MM-DD"` form
  * produced by `formatDate`, computed from the machine's local calendar day.
  */
+import { DateFormatPreference } from './constant'
 
 export const startOfDay = (date: Date): Date => {
   const d = new Date(date)
@@ -16,13 +17,37 @@ export const formatDate = (date: Date): string => {
   return `${year}-${month}-${day}`
 }
 
-export const formatDisplayDate = (date: Date): string => {
-  return date.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
+/** Human-readable date, in the user's chosen `dateFormat` (defaults to the long form). */
+export const formatDisplayDate = (
+  date: Date,
+  dateFormat: DateFormatPreference = 'long'
+): string => {
+  switch (dateFormat) {
+    case 'iso':
+      return formatDate(date)
+    case 'us':
+      return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'numeric',
+        day: 'numeric',
+        year: 'numeric'
+      })
+    case 'eu':
+      return date.toLocaleDateString('en-GB', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'numeric',
+        year: 'numeric'
+      })
+    case 'long':
+    default:
+      return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+  }
 }
 
 export const isToday = (date: Date): boolean => {
@@ -44,26 +69,28 @@ export const daysBetween = (from: Date, to: Date): number => {
 }
 
 /**
- * Local midnight of the Sunday that starts `date`'s week. Matches the
- * Sunday-first calendar grid (configurable first-day-of-week is a later change).
+ * Local midnight of the first day of `date`'s week, per `firstDayOfWeek`
+ * (0 = Sunday, 1 = Monday, ... - matches `Date#getDay()`; defaults to Sunday).
  */
-export const startOfWeek = (date: Date): Date => {
+export const startOfWeek = (date: Date, firstDayOfWeek = 0): Date => {
   const d = startOfDay(date)
-  d.setDate(d.getDate() - d.getDay())
+  const diff = (d.getDay() - firstDayOfWeek + 7) % 7
+  d.setDate(d.getDate() - diff)
   return d
 }
 
-/** `"YYYY-MM-DD"` key for the Sunday that starts `date`'s week. */
-export const weekKey = (date: Date): string => formatDate(startOfWeek(date))
+/** `"YYYY-MM-DD"` key for the day that starts `date`'s week. */
+export const weekKey = (date: Date, firstDayOfWeek = 0): string =>
+  formatDate(startOfWeek(date, firstDayOfWeek))
 
 /**
  * The cells of a month grid: leading `null`s to pad to the first weekday
- * (Sunday = 0), then one `Date` per day of the month.
+ * (per `firstDayOfWeek`), then one `Date` per day of the month.
  */
-export const getDaysInMonth = (date: Date): (Date | null)[] => {
+export const getDaysInMonth = (date: Date, firstDayOfWeek = 0): (Date | null)[] => {
   const year = date.getFullYear()
   const month = date.getMonth()
-  const startingDayOfWeek = new Date(year, month, 1).getDay()
+  const startingDayOfWeek = (new Date(year, month, 1).getDay() - firstDayOfWeek + 7) % 7
   const daysInMonth = new Date(year, month + 1, 0).getDate()
 
   const days: (Date | null)[] = []
