@@ -12,6 +12,8 @@ export interface HabitRow {
   weight: number
   /** Target completions per week; `null` means a daily habit (expected every day). */
   target_per_week: number | null
+  /** User-controlled list position; lower sorts first. Backfilled from `id`. */
+  sort_order: number
   current_streak: number
   longest_streak: number
   completion_rate: number
@@ -58,6 +60,7 @@ function initSchema(handle: Database.Database): void {
       status INTEGER NOT NULL,
       weight REAL DEFAULT 1.0,
       target_per_week INTEGER,
+      sort_order INTEGER,
       current_streak INTEGER DEFAULT 0,
       longest_streak INTEGER DEFAULT 0,
       completion_rate REAL DEFAULT 0.0,
@@ -76,6 +79,10 @@ function initSchema(handle: Database.Database): void {
   `)
 
   ensureColumn(handle, 'habits', 'target_per_week', 'INTEGER')
+  ensureColumn(handle, 'habits', 'sort_order', 'INTEGER')
+  // Backfill list positions for rows created before `sort_order` existed so the
+  // ordering is stable and every row compares cleanly.
+  handle.exec(`UPDATE habits SET sort_order = id WHERE sort_order IS NULL`)
 }
 
 function applyKey(dbPath: string, key: string): Database.Database {
@@ -112,7 +119,10 @@ export function getAllHabits(): HabitRow[] {
   // Active and archived habits; archived ones are filtered out in the renderer
   // for the tracking views but still shown in the archived list.
   return db
-    .prepare(`SELECT * FROM habits WHERE status IN (${STATUS_ACTIVE}, ${STATUS_ARCHIVED})`)
+    .prepare(
+      `SELECT * FROM habits WHERE status IN (${STATUS_ACTIVE}, ${STATUS_ARCHIVED})
+       ORDER BY sort_order ASC, id ASC`
+    )
     .all() as HabitRow[]
 }
 
@@ -121,8 +131,25 @@ export function getAllHabitLogs(): HabitLogRow[] {
 }
 
 export function addHabit(name: string, color: string): number {
-  return db.prepare(`INSERT INTO habits (name, color, status) VALUES (?, ?, 1)`).run(name, color)
-    .lastInsertRowid as number
+  // New habits land at the end of the list.
+  const { next } = db
+    .prepare(`SELECT COALESCE(MAX(sort_order), 0) + 1 AS next FROM habits`)
+    .get() as { next: number }
+  return db
+    .prepare(`INSERT INTO habits (name, color, status, sort_order) VALUES (?, ?, 1, ?)`)
+    .run(name, color, next).lastInsertRowid as number
+}
+
+/**
+ * Persist a user-defined habit order. `orderedIds` is the full list of habit ids
+ * in their new order; each row's `sort_order` is set to its index.
+ */
+export function reorderHabits(orderedIds: number[]): void {
+  const update = db.prepare(`UPDATE habits SET sort_order = ? WHERE id = ?`)
+  const run = db.transaction((ids: number[]) => {
+    ids.forEach((id, index) => update.run(index, id))
+  })
+  run(orderedIds)
 }
 
 export function updateHabit(
