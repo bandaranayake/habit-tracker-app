@@ -3,13 +3,21 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Habit } from '@/interfaces/habit'
 import { HabitLog } from '@/interfaces/habitLog'
-import { HABIT_STATUS_COMPLETED, HABIT_STATUS_MISSED, HABIT_STATUS_SKIPPED } from '@/utils/constant'
+import {
+  DateFormatPreference,
+  HABIT_STATUS_COMPLETED,
+  HABIT_STATUS_MISSED,
+  HABIT_STATUS_SKIPPED
+} from '@/utils/constant'
 import { formatDate, formatDisplayDate, weekKey } from '@/utils/date'
 
 interface HabitLoggerCardProps {
   selectedDate: Date | null
   habits: Habit[]
   records: HabitLog[]
+  /** 0 = Sunday, 1 = Monday - which weekday starts a habit's weekly-goal week. */
+  firstDayOfWeek: number
+  dateFormat: DateFormatPreference
   onUpdateRecord: (habit: Habit, date: string, state: number) => void
   onMarkAllComplete: (date: string) => void
 }
@@ -42,6 +50,8 @@ export const HabitLoggerCard = ({
   selectedDate,
   habits,
   records,
+  firstDayOfWeek,
+  dateFormat,
   onUpdateRecord,
   onMarkAllComplete
 }: HabitLoggerCardProps): JSX.Element => {
@@ -59,7 +69,7 @@ export const HabitLoggerCard = ({
     <Card>
       <CardHeader>
         <CardTitle className="text-lg">
-          {selectedDate ? formatDisplayDate(selectedDate) : 'Select a Date'}
+          {selectedDate ? formatDisplayDate(selectedDate, dateFormat) : 'Select a Date'}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -91,12 +101,12 @@ export const HabitLoggerCard = ({
 
                   let weekProgress: string | null = null
                   if (habit.target_per_week != null) {
-                    const selectedWeek = weekKey(selectedDate)
+                    const selectedWeek = weekKey(selectedDate, firstDayOfWeek)
                     const doneThisWeek = records.filter(
                       (r) =>
                         r.habit_id === habit.id &&
                         r.state === HABIT_STATUS_COMPLETED &&
-                        weekKey(new Date(`${r.date}T00:00:00`)) === selectedWeek
+                        weekKey(new Date(`${r.date}T00:00:00`), firstDayOfWeek) === selectedWeek
                     ).length
                     weekProgress = `${doneThisWeek}/${habit.target_per_week} this week`
                   }

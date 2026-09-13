@@ -30,6 +30,9 @@ declare global {
       dbExists: () => Promise<boolean>
       createDatabase: (password: string) => Promise<DbResult>
       unlockDatabase: (password: string) => Promise<DbResult>
+      changePassword: (currentPassword: string, newPassword: string) => Promise<DbResult>
+      getAllSettings: () => Promise<Record<string, string>>
+      setSetting: (key: string, value: string) => Promise<void>
     }
   }
 }

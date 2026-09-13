@@ -25,5 +25,9 @@ contextBridge.exposeInMainWorld('habitAPI', {
   saltExists: () => ipcRenderer.invoke('salt-exists'),
   dbExists: () => ipcRenderer.invoke('db-exists'),
   createDatabase: (password: string) => ipcRenderer.invoke('create-database', password),
-  unlockDatabase: (password: string) => ipcRenderer.invoke('unlock-database', password)
+  unlockDatabase: (password: string) => ipcRenderer.invoke('unlock-database', password),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    ipcRenderer.invoke('change-password', currentPassword, newPassword),
+  getAllSettings: () => ipcRenderer.invoke('get-all-settings'),
+  setSetting: (key: string, value: string) => ipcRenderer.invoke('set-setting', key, value)
 })

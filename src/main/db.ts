@@ -28,6 +28,11 @@ export interface HabitLogRow {
   status: number
 }
 
+export interface SettingRow {
+  key: string
+  value: string
+}
+
 /**
  * Add a column to an existing table if it is missing. There is no migration
  * system, but a schema change must not wipe a developer's local database, so
@@ -76,6 +81,11 @@ function initSchema(handle: Database.Database): void {
       FOREIGN KEY (habit_id) REFERENCES habits(id) ON DELETE CASCADE,
       UNIQUE(habit_id, date)
     );
+
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
   `)
 
   ensureColumn(handle, 'habits', 'target_per_week', 'INTEGER')
@@ -94,6 +104,20 @@ function applyKey(dbPath: string, key: string): Database.Database {
   handle.pragma(`key = '${key.replace(/'/g, "''")}'`)
   handle.pragma('foreign_keys = ON')
   return handle
+}
+
+/** Whether `key` opens the database at `dbPath`, without touching the live connection. */
+export function verifyKey(dbPath: string, key: string): boolean {
+  let handle: Database.Database | undefined
+  try {
+    handle = applyKey(dbPath, key)
+    handle.prepare('SELECT 1 FROM sqlite_master LIMIT 1').get()
+    return true
+  } catch {
+    return false
+  } finally {
+    handle?.close()
+  }
 }
 
 export function openEncryptedDatabase(dbPath: string, key: string): void {
@@ -198,4 +222,26 @@ export function archiveHabit(habitId: number): void {
 /** Resume tracking a previously archived habit. */
 export function unarchiveHabit(habitId: number): void {
   db.prepare(`UPDATE habits SET status = ${STATUS_ACTIVE} WHERE id = ?`).run(habitId)
+}
+
+/** All app preferences as a flat key/value map (missing keys just aren't present). */
+export function getAllSettings(): Record<string, string> {
+  const rows = db.prepare(`SELECT key, value FROM settings`).all() as SettingRow[]
+  return Object.fromEntries(rows.map((r) => [r.key, r.value]))
+}
+
+export function setSetting(key: string, value: string): void {
+  db.prepare(
+    `INSERT INTO settings (key, value) VALUES (?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+  ).run(key, value)
+}
+
+/**
+ * Re-encrypt the open database with a new key (SQLCipher `PRAGMA rekey`). The
+ * caller is responsible for verifying the current password first - this just
+ * swaps the key on the already-open handle.
+ */
+export function rekeyDatabase(newKey: string): void {
+  db.pragma(`rekey = '${newKey.replace(/'/g, "''")}'`)
 }

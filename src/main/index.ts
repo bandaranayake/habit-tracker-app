@@ -9,16 +9,20 @@ import {
   archiveHabit,
   getAllHabitLogs,
   getAllHabits,
+  getAllSettings,
   createEncryptedDatabase,
   openEncryptedDatabase,
+  rekeyDatabase,
   removeHabit,
   reorderHabits,
   setHabitTarget,
   setHabitWeight,
+  setSetting,
   unarchiveHabit,
   updateHabit,
   updateHabitDetails,
-  updateHabitLog
+  updateHabitLog,
+  verifyKey
 } from './db'
 
 const KDF_ITERATIONS = 100_000
@@ -179,6 +183,45 @@ app.whenReady().then(() => {
       return { success: false, error: 'Incorrect password provided' }
     }
   })
+
+  // IPC: change the unlock password. Verifies the current password, then
+  // re-encrypts the open database (SQLCipher rekey) under a freshly-salted key
+  // derived from the new password.
+  ipcMain.handle('change-password', async (_, currentPassword: string, newPassword: string) => {
+    if (typeof newPassword !== 'string' || newPassword.length < MIN_PASSWORD_LENGTH) {
+      return {
+        success: false,
+        error: `New password must be at least ${MIN_PASSWORD_LENGTH} characters`
+      }
+    }
+    if (typeof currentPassword !== 'string' || currentPassword.length === 0) {
+      return { success: false, error: 'Current password cannot be empty' }
+    }
+
+    try {
+      const currentKey = deriveKey(currentPassword, readFileSync(salt_file))
+      if (!verifyKey(db_file, currentKey)) {
+        return { success: false, error: 'Current password is incorrect' }
+      }
+
+      const newSalt = randomBytes(SALT_LENGTH)
+      const newKey = deriveKey(newPassword, newSalt)
+      rekeyDatabase(newKey)
+      // Only replace the salt file once the rekey itself has succeeded.
+      writeFileSync(salt_file, newSalt)
+      return { success: true }
+    } catch (err: unknown) {
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Failed to change password'
+      }
+    }
+  })
+
+  // IPC: app preferences
+  ipcMain.handle('get-all-settings', () => getAllSettings())
+
+  ipcMain.handle('set-setting', (_, key: string, value: string) => setSetting(key, value))
 
   // IPC: database actions
   ipcMain.handle('get-all-habits', () => getAllHabits())
