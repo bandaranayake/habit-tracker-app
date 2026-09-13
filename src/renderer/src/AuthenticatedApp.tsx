@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Settings as SettingsIcon } from 'lucide-react'
+import { BarChart3, Settings as SettingsIcon } from 'lucide-react'
 import { CardHeader, CardTitle, Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { getAdjacentMonth } from './utils/date'
@@ -25,6 +25,7 @@ import { CalendarCard } from '@/components/cards/calendarCard'
 import { HabitLoggerCard } from '@/components/cards/habitLoggerCard'
 import { UndoSnackbar } from '@/components/UndoSnackbar'
 import { SettingsView } from '@/components/SettingsView'
+import { StatsView } from '@/components/StatsView'
 import BarChart from './components/chart/chart-bar-interactive'
 import { ChartData } from './types/chartData'
 import { useSettings } from '@/context/SettingsContext'
@@ -32,7 +33,7 @@ import { useSettings } from '@/context/SettingsContext'
 /** How long the "Habit deleted" undo prompt stays before the delete is committed. */
 const DELETE_UNDO_MS = 6000
 
-type View = 'home' | 'settings'
+type View = 'home' | 'settings' | 'stats'
 
 interface PendingDelete {
   habit: Habit
@@ -347,21 +348,40 @@ function AuthenticatedApp(): JSX.Element {
       <div className="relative text-center">
         <h1 className="text-3xl font-bold mb-2">Habit Tracker</h1>
         <p className="text-muted-foreground">Track your daily habits and build consistency</p>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="absolute right-0 top-0 h-8 w-8 p-0"
-          onClick={() => setView(view === 'settings' ? 'home' : 'settings')}
-          title="Settings"
-          aria-label="Settings"
-        >
-          <SettingsIcon className="w-4 h-4" />
-        </Button>
+        <div className="absolute right-0 top-0 flex gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => setView(view === 'stats' ? 'home' : 'stats')}
+            title="Stats"
+            aria-label="Stats"
+          >
+            <BarChart3 className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => setView(view === 'settings' ? 'home' : 'settings')}
+            title="Settings"
+            aria-label="Settings"
+          >
+            <SettingsIcon className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
-      {view === 'settings' ? (
-        <SettingsView onBack={() => setView('home')} />
-      ) : (
+      {view === 'settings' && <SettingsView onBack={() => setView('home')} />}
+      {view === 'stats' && (
+        <StatsView
+          habits={habits}
+          records={records}
+          firstDayOfWeek={firstDayOfWeek}
+          onBack={() => setView('home')}
+        />
+      )}
+      {view === 'home' && (
         <>
           {isLoading && <LoadingSpinner />}
 
