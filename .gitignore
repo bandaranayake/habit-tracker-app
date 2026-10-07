@@ -8,3 +8,6 @@ build
 # Personal, machine-local Claude Code notes (CLAUDE.md is committed)
 CLAUDE.local.md
 .claude/settings.local.json
+
+# Tauri / Rust build output
+src-tauri/target/
