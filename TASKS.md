@@ -8,7 +8,6 @@ Gates: the frontend gates (typecheck, eslint check, prettier --check, frontend b
 
 ## Open
 
-- [ ] T01 [frontend] Add Tauri JS packages and tool ignores. Add `@tauri-apps/api@^2` (dependency) and `@tauri-apps/cli@^2` (devDependency) with `pnpm add`. Add the script `"tauri": "tauri"`. Add `src-tauri` to `.eslintignore`, and `src-tauri/target` and `src-tauri/gen` to `.prettierignore`. Leave the Electron scripts untouched. (deps: none) - done when: `pnpm tauri --version` prints 2.x, the lockfile is updated, and all frontend gates pass with `pnpm exec electron-vite build`.
 - [ ] T02 [frontend] Add a standalone `vite.config.ts` next to `electron.vite.config.ts`: root `src/renderer`, React plugin, aliases `@` and `@renderer` → `src/renderer/src`, `build.outDir` = repo-root `dist` (`emptyOutDir: true`), `server.port: 5173` with `strictPort: true`, `clearScreen: false`. Add `vite.config.ts` to the `tsconfig.node.json` include. Append `connect-src 'self' ipc: http://ipc.localhost` to the meta CSP in `src/renderer/index.html`. (deps: T01) - done when: `pnpm exec vite build` writes `dist/index.html` plus assets, `pnpm exec electron-vite build` still passes, and all frontend gates pass.
 - [ ] T03 [rust] Scaffold `src-tauri/` for Tauri 2 by hand (no `tauri init` prompts):
   - `Cargo.toml` (lib + bin, `tauri`, `tauri-build`, `serde`, `serde_json`), `build.rs`, `src/main.rs` → `habit_tracker_lib::run()`, `src/lib.rs`, and `.gitignore` (`/target`, `/gen/schemas`).
@@ -97,6 +96,8 @@ Gates: the frontend gates (typecheck, eslint check, prettier --check, frontend b
 Lead follow-up after T11: update the CLAUDE.md Commands, Architecture and Gates sections (`electron-vite build` → `vite build`, `pnpm dev` = `tauri dev`, remove the native-module/postinstall notes).
 
 ## Done
+
+- [x] T01 [frontend] Add Tauri JS packages and tool ignores. Add `@tauri-apps/api@^2` (dependency) and `@tauri-apps/cli@^2` (devDependency) with `pnpm add`. Add the script `"tauri": "tauri"`. Add `src-tauri` to `.eslintignore`, and `src-tauri/target` and `src-tauri/gen` to `.prettierignore`. Leave the Electron scripts untouched. (deps: none) - done when: `pnpm tauri --version` prints 2.x, the lockfile is updated, and all frontend gates pass with `pnpm exec electron-vite build`.
 
 ## Blockers
 
