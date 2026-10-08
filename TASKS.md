@@ -88,7 +88,7 @@ Gates: the frontend gates (typecheck, eslint check, prettier --check, frontend b
   (deps: T10) - done when: `pnpm install --frozen-lockfile` succeeds, `grep -rn "electron" package.json src` only matches the `@electron-toolkit` eslint and tsconfig presets, and the frontend gates pass with `pnpm exec vite build`.
 
 - [x] T11b [frontend] (done except `.npmrc` and `.vscode/launch.json`, see Blocker T11c) Finish the Electron removal: delete the tracked `src/main/`, `src/preload/`, `electron.vite.config.ts`, `electron-builder.yml`, `.npmrc` and `.vscode/launch.json`, and rename `vite.config.ts` → `vite.config.mts` (the content is already ESM-safe; `tsconfig.node.json` includes `vite.config.*`). (deps: T11) - done when: those paths are gone from `git ls-files`, `grep -rn electron src` is empty, `pnpm exec vite build` prints no "CJS build of Vite's Node API" warning, and the frontend gates pass.
-- [ ] T12 [frontend] Update CI and the README:
+- [x] T12 [frontend] Update CI and the README:
   - `.github/workflows/ci.yml`: the build step becomes `pnpm exec vite build`. Add a `rust` job per MIGRATION.md (apt deps `libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf build-essential`, `dtolnay/rust-toolchain@stable` with rustfmt and clippy, `Swatinem/rust-cache@v2` with `workspaces: src-tauri`, pnpm install + `pnpm exec vite build`, then cargo fmt --check, clippy -D warnings and test with `--manifest-path src-tauri/Cargo.toml`).
   - `README.md`: Tauri requirements (Rust stable, WebView2 and MSVC build tools on Windows, a C compiler for the bundled SQLite3 Multiple Ciphers; no OpenSSL or Perl), `pnpm dev`/`pnpm build*`, and the unchanged data location.
 
