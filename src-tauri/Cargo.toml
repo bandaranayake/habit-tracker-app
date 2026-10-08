@@ -27,6 +27,7 @@ tauri-plugin-opener = "2"
 tempfile = "3.27.0"
 
 # rusqlite's libsqlite3-sys is replaced by ./sqlite3mc-sys, which compiles SQLite3 Multiple
-# Ciphers (MIGRATION.md Decision 5). No system SQLite, no OpenSSL.
+# Ciphers, the engine the Electron app used. No system SQLite, no OpenSSL. Bump the patch
+# crate's version and copied bindings together with rusqlite (see CLAUDE.md "SQLite engine").
 [patch.crates-io]
 libsqlite3-sys = { path = "sqlite3mc-sys" }

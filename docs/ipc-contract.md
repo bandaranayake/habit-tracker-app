@@ -1,9 +1,8 @@
 # IPC contract
 
-The only interface between `src-tauri/` (rust-dev) and the frontend (frontend-dev).
-**Only the `lead` edits this file.** Workers report contract problems instead of working around them.
+The interface between the Rust backend (`src-tauri/`) and the frontend (`src/renderer/src/lib/native.ts`). Keep all three in sync when a command changes.
 
-Derived 1:1 from `src/preload/index.ts` / `index.d.ts` and the handlers in `src/main/index.ts` (Electron, commit `857f825`).
+Originally derived 1:1 from `src/preload/index.ts` / `index.d.ts` and the handlers in `src/main/index.ts` (Electron, commit `857f825`).
 
 ## Conventions
 
