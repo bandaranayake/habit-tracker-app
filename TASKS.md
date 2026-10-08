@@ -76,7 +76,7 @@ Gates: the frontend gates (typecheck, eslint check, prettier --check, frontend b
   (deps: T08) - done when: `grep -r "window.habitAPI" src/renderer` returns nothing and the frontend gates pass.
 
 - [x] T10 [rust] Full-app build check: from the repo root, `pnpm tauri build --debug --no-bundle` succeeds (it runs `vite build` and compiles the app with the real `dist/`). Fix anything in `src-tauri/` it surfaces. (deps: T05, T06, T07, T09) - done when: that command exits 0 and the cargo gates pass. Verified by the lead (the worker was denied the command): exit 0, `src-tauri/target/debug/habit-tracker.exe`, no tauri config warnings, no file changes needed.
-- [ ] T11 [frontend] Remove Electron:
+- [x] T11 [frontend] Remove Electron (done except the file deletions and the Vite config rename, which moved to T11b because the worker was denied `git rm`/`git mv`):
   - Delete `src/main/`, `src/preload/`, `electron.vite.config.ts`, `electron-builder.yml` and `.npmrc`. Remove the Electron configs from `.vscode/launch.json` (delete the file if nothing is left).
   - `pnpm remove electron electron-builder electron-rebuild electron-vite @electron-toolkit/preload @electron-toolkit/utils better-sqlite3-multiple-ciphers`. Keep the `@electron-toolkit` eslint and tsconfig presets.
   - Scripts as in MIGRATION.md "Build and CI changes": `dev`, `build`, `build:unpack`, `build:win`, `build:mac` and `build:linux` move to tauri; drop `start` and `postinstall`; remove `"main"`.
@@ -87,6 +87,7 @@ Gates: the frontend gates (typecheck, eslint check, prettier --check, frontend b
 
   (deps: T10) - done when: `pnpm install --frozen-lockfile` succeeds, `grep -rn "electron" package.json src` only matches the `@electron-toolkit` eslint and tsconfig presets, and the frontend gates pass with `pnpm exec vite build`.
 
+- [ ] T11b [frontend] Finish the Electron removal: delete the tracked `src/main/`, `src/preload/`, `electron.vite.config.ts`, `electron-builder.yml`, `.npmrc` and `.vscode/launch.json`, and rename `vite.config.ts` → `vite.config.mts` (the content is already ESM-safe; `tsconfig.node.json` includes `vite.config.*`). (deps: T11) - done when: those paths are gone from `git ls-files`, `grep -rn electron src` is empty, `pnpm exec vite build` prints no "CJS build of Vite's Node API" warning, and the frontend gates pass.
 - [ ] T12 [frontend] Update CI and the README:
   - `.github/workflows/ci.yml`: the build step becomes `pnpm exec vite build`. Add a `rust` job per MIGRATION.md (apt deps `libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf build-essential`, `dtolnay/rust-toolchain@stable` with rustfmt and clippy, `Swatinem/rust-cache@v2` with `workspaces: src-tauri`, pnpm install + `pnpm exec vite build`, then cargo fmt --check, clippy -D warnings and test with `--manifest-path src-tauri/Cargo.toml`).
   - `README.md`: Tauri requirements (Rust stable, WebView2 and MSVC build tools on Windows, a C compiler for the bundled SQLite3 Multiple Ciphers; no OpenSSL or Perl), `pnpm dev`/`pnpm build*`, and the unchanged data location.

@@ -1,21 +1,10 @@
 # Not a monorepo - this file only carries pnpm settings (their home as of
 # pnpm 10+).
 
-# Flat node_modules, like npm. electron-builder and the native module
-# (better-sqlite3-multiple-ciphers) resolve their own binaries by walking a
-# hoisted tree; pnpm's default isolated layout breaks that.
-nodeLinker: hoisted
-
-# Dependency build scripts are blocked by default. These packages fetch or
-# compile native / platform binaries the app needs on install. `allowBuilds` is
-# what pnpm 11 actually reads; `onlyBuiltDependencies` is kept for older pnpm.
+# Dependency build scripts are blocked by default. esbuild (used by Vite)
+# fetches its platform binary on install. `allowBuilds` is what pnpm 11
+# actually reads; `onlyBuiltDependencies` is kept for older pnpm.
 allowBuilds:
-  better-sqlite3-multiple-ciphers: true
-  electron: true
   esbuild: true
-  lzma-native: true
 onlyBuiltDependencies:
-  - better-sqlite3-multiple-ciphers
-  - electron
   - esbuild
-  - lzma-native
