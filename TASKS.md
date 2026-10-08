@@ -94,7 +94,7 @@ Gates: the frontend gates (typecheck, eslint check, prettier --check, frontend b
 
   (deps: T11) - done when: `ci.yml` parses as YAML (prettier --check passes), it has no `electron-vite` reference, and the frontend gates pass.
 
-Lead follow-up after T11: update the CLAUDE.md Commands, Architecture and Gates sections (`electron-vite build` → `vite build`, `pnpm dev` = `tauri dev`, remove the native-module/postinstall notes).
+Lead follow-up after T11 (done): update the CLAUDE.md Commands, Architecture and Gates sections (`electron-vite build` → `vite build`, `pnpm dev` = `tauri dev`, remove the native-module/postinstall notes).
 
 ## Done
 
