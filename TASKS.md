@@ -44,7 +44,7 @@ Gates: the frontend gates (typecheck, eslint check, prettier --check, frontend b
 
   (deps: T04) - done when: the cargo gates pass and all five commands are registered with the contract names.
 
-- [ ] T06 [rust] `src/commands.rs`: the 14 data commands with the contract's exact names, args and SQL: `get_all_habits`, `add_habit`, `update_habit`, `set_habit_weight`, `set_habit_target`, `update_habit_details`, `remove_habit`, `reorder_habits`, `archive_habit`, `unarchive_habit`, `get_all_habit_logs`, `update_habit_log`, `get_all_settings`, `set_setting` (14 total). `Habit`/`HabitLog` structs serialize with snake_case column names, `target_per_week: Option<i64>`. Return `Locked` when no connection is open. Register all in `generate_handler!`.
+- [x] T06 [rust] `src/commands.rs`: the 14 data commands with the contract's exact names, args and SQL: `get_all_habits`, `add_habit`, `update_habit`, `set_habit_weight`, `set_habit_target`, `update_habit_details`, `remove_habit`, `reorder_habits`, `archive_habit`, `unarchive_habit`, `get_all_habit_logs`, `update_habit_log`, `get_all_settings`, `set_setting` (14 total). `Habit`/`HabitLog` structs serialize with snake_case column names, `target_per_week: Option<i64>`. Return `Locked` when no connection is open. Register all in `generate_handler!`.
 
   Tests on a temp DB:
   - `add_habit` returns the id and increments `sort_order`

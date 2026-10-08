@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod commands;
 pub mod db;
 pub mod error;
 
@@ -19,7 +20,21 @@ pub fn run() {
             auth::db_exists,
             auth::create_database,
             auth::unlock_database,
-            auth::change_password
+            auth::change_password,
+            commands::get_all_habits,
+            commands::get_all_habit_logs,
+            commands::add_habit,
+            commands::update_habit,
+            commands::set_habit_weight,
+            commands::set_habit_target,
+            commands::update_habit_details,
+            commands::update_habit_log,
+            commands::remove_habit,
+            commands::reorder_habits,
+            commands::archive_habit,
+            commands::unarchive_habit,
+            commands::get_all_settings,
+            commands::set_setting
         ])
         .run(tauri::generate_context!())
     {
