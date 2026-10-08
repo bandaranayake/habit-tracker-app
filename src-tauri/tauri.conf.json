@@ -1,0 +1,38 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Habit Tracker",
+  "mainBinaryName": "habit-tracker",
+  "version": "../package.json",
+  "identifier": "com.bandaranayake.habittracker",
+  "build": {
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist",
+    "beforeDevCommand": "pnpm exec vite",
+    "beforeBuildCommand": "pnpm exec vite build"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Habit Tracker",
+        "width": 900,
+        "height": 670
+      }
+    ],
+    "withGlobalTauri": false,
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "app", "dmg", "appimage", "deb"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

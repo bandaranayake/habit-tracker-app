@@ -8,7 +8,7 @@ Gates: the frontend gates (typecheck, eslint check, prettier --check, frontend b
 
 ## Open
 
-- [ ] T03 [rust] Scaffold `src-tauri/` for Tauri 2 by hand (no `tauri init` prompts):
+- [x] T03 [rust] Scaffold `src-tauri/` for Tauri 2 by hand (no `tauri init` prompts):
   - `Cargo.toml` (lib + bin, `tauri`, `tauri-build`, `serde`, `serde_json`), `build.rs`, `src/main.rs` → `habit_tracker_lib::run()`, `src/lib.rs`, and `.gitignore` (`/target`, `/gen/schemas`).
   - Icons: `pnpm tauri icon resources/icon.png -o src-tauri/icons`.
   - `tauri.conf.json`: productName `Habit Tracker`, `mainBinaryName` `habit-tracker`, version `../package.json`, identifier `com.bandaranayake.habittracker`, the build section from MIGRATION.md (devUrl `http://localhost:5173`, frontendDist `../dist`, `beforeDevCommand: pnpm exec vite`, `beforeBuildCommand: pnpm exec vite build`).
