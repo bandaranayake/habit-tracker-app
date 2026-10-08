@@ -96,7 +96,7 @@ Gates: the frontend gates (typecheck, eslint check, prettier --check, frontend b
 
 Lead follow-up after T11 (done): update the CLAUDE.md Commands, Architecture and Gates sections (`electron-vite build` → `vite build`, `pnpm dev` = `tauri dev`, remove the native-module/postinstall notes).
 
-- [ ] T13 [rust] Fix habit drag-to-reorder (a bug found in the user's manual test). Set `"dragDropEnabled": false` on the `main` window in `src-tauri/tauri.conf.json`. Root cause: Tauri's default `dragDropEnabled: true` replaces WebView2's drag-drop handler, which disables HTML5 drag and drop on Windows (tauri-utils `WindowConfig::drag_drop_enabled` docs). The reorder UI (`habitCard.tsx`) uses HTML5 DnD. The app never accepts OS file drops, so nothing is lost. (deps: T07) - done when: the window config has `dragDropEnabled: false`, it still flows through `WebviewWindowBuilder::from_config`, and the cargo gates, `prettier --check .` and `pnpm tauri build --debug --no-bundle` pass.
+- [x] T13 [rust] Fix habit drag-to-reorder (a bug found in the user's manual test). Set `"dragDropEnabled": false` on the `main` window in `src-tauri/tauri.conf.json`. Root cause: Tauri's default `dragDropEnabled: true` replaces WebView2's drag-drop handler, which disables HTML5 drag and drop on Windows (tauri-utils `WindowConfig::drag_drop_enabled` docs). The reorder UI (`habitCard.tsx`) uses HTML5 DnD. The app never accepts OS file drops, so nothing is lost. (deps: T07) - done when: the window config has `dragDropEnabled: false`, it still flows through `WebviewWindowBuilder::from_config`, and the cargo gates, `prettier --check .` and `pnpm tauri build --debug --no-bundle` pass.
 
 ## Done
 

@@ -17,6 +17,7 @@
         "title": "Habit Tracker",
         "width": 900,
         "height": 670,
+        "dragDropEnabled": false,
         "create": false
       }
     ],
