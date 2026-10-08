@@ -75,7 +75,7 @@ Gates: the frontend gates (typecheck, eslint check, prettier --check, frontend b
 
   (deps: T08) - done when: `grep -r "window.habitAPI" src/renderer` returns nothing and the frontend gates pass.
 
-- [ ] T10 [rust] Full-app build check: from the repo root, `pnpm tauri build --debug --no-bundle` succeeds (it runs `vite build` and compiles the app with the real `dist/`). Fix anything in `src-tauri/` it surfaces. (deps: T05, T06, T07, T09) - done when: that command exits 0 and the cargo gates pass.
+- [x] T10 [rust] Full-app build check: from the repo root, `pnpm tauri build --debug --no-bundle` succeeds (it runs `vite build` and compiles the app with the real `dist/`). Fix anything in `src-tauri/` it surfaces. (deps: T05, T06, T07, T09) - done when: that command exits 0 and the cargo gates pass. Verified by the lead (the worker was denied the command): exit 0, `src-tauri/target/debug/habit-tracker.exe`, no tauri config warnings, no file changes needed.
 - [ ] T11 [frontend] Remove Electron:
   - Delete `src/main/`, `src/preload/`, `electron.vite.config.ts`, `electron-builder.yml` and `.npmrc`. Remove the Electron configs from `.vscode/launch.json` (delete the file if nothing is left).
   - `pnpm remove electron electron-builder electron-rebuild electron-vite @electron-toolkit/preload @electron-toolkit/utils better-sqlite3-multiple-ciphers`. Keep the `@electron-toolkit` eslint and tsconfig presets.
@@ -83,12 +83,13 @@ Gates: the frontend gates (typecheck, eslint check, prettier --check, frontend b
   - `tsconfig.node.json`: include `vite.config.ts` only, and drop the `electron-vite/node` types.
   - `pnpm-workspace.yaml`: allowBuilds `esbuild` only, and drop `nodeLinker: hoisted`.
   - Delete the meta CSP from `src/renderer/index.html` (`tauri.conf.json` owns the CSP).
+  - Fix Vite's "The CJS build of Vite's Node API is deprecated" warning (found in T10). Rename `vite.config.ts` → `vite.config.mts` and replace `__dirname` with an ESM equivalent (`fileURLToPath(new URL('.', import.meta.url))`). Don't add `"type": "module"`, because `tailwind.config.js` and `postcss.config.js` are CJS. Update the tsconfig include.
 
   (deps: T10) - done when: `pnpm install --frozen-lockfile` succeeds, `grep -rn "electron" package.json src` only matches the `@electron-toolkit` eslint and tsconfig presets, and the frontend gates pass with `pnpm exec vite build`.
 
 - [ ] T12 [frontend] Update CI and the README:
   - `.github/workflows/ci.yml`: the build step becomes `pnpm exec vite build`. Add a `rust` job per MIGRATION.md (apt deps `libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf build-essential`, `dtolnay/rust-toolchain@stable` with rustfmt and clippy, `Swatinem/rust-cache@v2` with `workspaces: src-tauri`, pnpm install + `pnpm exec vite build`, then cargo fmt --check, clippy -D warnings and test with `--manifest-path src-tauri/Cargo.toml`).
-  - `README.md`: Tauri requirements (Rust stable, WebView2/MSVC on Windows, Strawberry Perl for vendored OpenSSL), `pnpm dev`/`pnpm build*`, and the unchanged data location.
+  - `README.md`: Tauri requirements (Rust stable, WebView2 and MSVC build tools on Windows, a C compiler for the bundled SQLite3 Multiple Ciphers; no OpenSSL or Perl), `pnpm dev`/`pnpm build*`, and the unchanged data location.
 
   (deps: T11) - done when: `ci.yml` parses as YAML (prettier --check passes), it has no `electron-vite` reference, and the frontend gates pass.
 
