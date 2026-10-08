@@ -30,7 +30,7 @@ Gates: the frontend gates (typecheck, eslint check, prettier --check, frontend b
 
   Attempt 1 failed: the vendored OpenSSL build needs a native perl. The engine is now switched. (deps: T03) - done when: the cargo gates pass and the tests listed are present and green.
 
-- [ ] T05 [rust] `src/auth.rs`:
+- [x] T05 [rust] `src/auth.rs`:
   - The data dir (`config_dir()/habit-tracker-app[-dev]`, created if missing).
   - `derive_key` (PBKDF2-HMAC-SHA256, 100 000 iterations, 32 bytes, base64 standard padded) and the 32-byte salt file.
   - The unlock throttle (managed counter, `min(n*500, 5000)` ms, async sleep without holding the DB lock).
