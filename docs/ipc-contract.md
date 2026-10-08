@@ -153,10 +153,11 @@ None. The Electron app sends no main → renderer messages.
 ## Native behavior (no command, no JS API)
 
 - **New windows / external links:** the `main` webview denies every new-window request (`window.open`, `target="_blank"`). If the URL scheme is `http` or `https`, Rust opens it in the OS default browser (`tauri-plugin-opener`, called from Rust only). Other schemes and malformed URLs are ignored. The frontend needs no code for this.
-- **Window:** label `main`, title `Habit Tracker`, 900×670. DevTools open automatically in debug builds only.
+- **Window:** label `main`, title `Habit Tracker`, 900×670, `dragDropEnabled: false`. Tauri's native file-drop handler is off so HTML5 drag and drop works in the webview; habit reordering depends on it. DevTools open automatically in debug builds only.
 - **CSP** (`app.security.csp`): `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost`. `withGlobalTauri: false`.
 
 ## Changelog
 
 - 2026-10-08: initial contract from the Electron preload bridge (19 commands, 0 events). Affects T03–T09.
 - 2026-10-08: the DB engine switched from SQLCipher (vendored OpenSSL) to SQLite3 Multiple Ciphers, and the opening sequence now sets `PRAGMA cipher = 'sqlcipher'` before the key, exactly like Electron. Reason: the vendored OpenSSL build needs a Windows-native perl that isn't available (T04, first attempt). Affects T04–T06.
+- 2026-10-08: the `main` window sets `dragDropEnabled: false`. With Tauri's default (`true`), WebView2's drag-drop handler is replaced and HTML5 drag-to-reorder of habits stops working on Windows. Found by the user's manual test. Affects T13.

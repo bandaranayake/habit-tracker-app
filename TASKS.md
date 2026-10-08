@@ -96,13 +96,14 @@ Gates: the frontend gates (typecheck, eslint check, prettier --check, frontend b
 
 Lead follow-up after T11 (done): update the CLAUDE.md Commands, Architecture and Gates sections (`electron-vite build` → `vite build`, `pnpm dev` = `tauri dev`, remove the native-module/postinstall notes).
 
+- [ ] T13 [rust] Fix habit drag-to-reorder (a bug found in the user's manual test). Set `"dragDropEnabled": false` on the `main` window in `src-tauri/tauri.conf.json`. Root cause: Tauri's default `dragDropEnabled: true` replaces WebView2's drag-drop handler, which disables HTML5 drag and drop on Windows (tauri-utils `WindowConfig::drag_drop_enabled` docs). The reorder UI (`habitCard.tsx`) uses HTML5 DnD. The app never accepts OS file drops, so nothing is lost. (deps: T07) - done when: the window config has `dragDropEnabled: false`, it still flows through `WebviewWindowBuilder::from_config`, and the cargo gates, `prettier --check .` and `pnpm tauri build --debug --no-bundle` pass.
+
 ## Done
 
 - [x] T01 [frontend] Add Tauri JS packages and tool ignores. Add `@tauri-apps/api@^2` (dependency) and `@tauri-apps/cli@^2` (devDependency) with `pnpm add`. Add the script `"tauri": "tauri"`. Add `src-tauri` to `.eslintignore`, and `src-tauri/target` and `src-tauri/gen` to `.prettierignore`. Leave the Electron scripts untouched. (deps: none) - done when: `pnpm tauri --version` prints 2.x, the lockfile is updated, and all frontend gates pass with `pnpm exec electron-vite build`.
+- [x] T11c [frontend] Delete `.npmrc` and `.vscode/launch.json`. This was blocked for the agents by the permission policy; the user deleted both files by hand, and the lead committed the deletion.
 - [x] T02 [frontend] Add a standalone `vite.config.ts` (root `src/renderer`, outDir repo-root `dist`, aliases, port 5173 strict) and `connect-src ipc:` in the meta CSP. (deps: T01) - done when: `vite build` writes `dist/` and the gates pass. Verified: same Tailwind classes as the electron-vite CSS (the output is just minified).
 
 ## Blockers
 
 <!-- Tasks that failed verification twice: id, error, diagnosis. -->
-
-- T11c [frontend] Delete `.npmrc` (Electron mirror vars only) and `.vscode/launch.json` (electron-vite debug configs). Attempted twice (in T11 and T11b): the permission system denied `git rm .npmrc`, `git rm .vscode/launch.json`, `rm .npmrc` and `rm .vscode/launch.json` for the worker. The other T11b deletions succeeded with plain `rm`. **Diagnosis:** these two are dotfile/dot-directory paths that the non-interactive permission check refuses. Both files are inert (no Electron is installed and nothing reads them), so nothing depends on this. **Fix:** run `git rm .npmrc .vscode/launch.json` once by hand, or allow `rm` for these paths.
