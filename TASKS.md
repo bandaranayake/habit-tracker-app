@@ -57,7 +57,7 @@ Gates: the frontend gates (typecheck, eslint check, prettier --check, frontend b
 
   (deps: T04) - done when: the cargo gates pass and all 14 commands are registered with the contract names.
 
-- [ ] T07 [rust] Window behavior:
+- [x] T07 [rust] Window behavior:
   - Set `create: false` on the `main` window in `tauri.conf.json`, and build it in `setup()` via `WebviewWindowBuilder::from_config`.
   - `on_new_window` always denies. For `http` and `https` URLs, open them with `tauri-plugin-opener` from Rust; other schemes are ignored.
   - Call `open_devtools()` only under `cfg(debug_assertions)`.

@@ -16,7 +16,8 @@
         "label": "main",
         "title": "Habit Tracker",
         "width": 900,
-        "height": 670
+        "height": 670,
+        "create": false
       }
     ],
     "withGlobalTauri": false,
