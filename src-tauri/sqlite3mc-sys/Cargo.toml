@@ -1,0 +1,39 @@
+# Drop-in replacement for crates.io `libsqlite3-sys`, wired in via `[patch.crates-io]` in
+# ../Cargo.toml. It compiles SQLite3 Multiple Ciphers (from `sqlite3mc-src`) instead of
+# plain SQLite or SQLCipher, so rusqlite runs on the same engine Electron's
+# better-sqlite3-multiple-ciphers used. Name, version and `links` must match the
+# crate it replaces; the feature names exist only so rusqlite's feature table resolves.
+[package]
+name = "libsqlite3-sys"
+version = "0.38.2"
+edition = "2021"
+links = "sqlite3"
+license = "MIT"
+publish = false
+description = "libsqlite3-sys bindings linked against SQLite3 Multiple Ciphers"
+
+[lib]
+name = "libsqlite3_sys"
+
+[build-dependencies]
+cc = "1.2.27"
+sqlite3mc-src = "=205.1.0"
+
+[features]
+default = ["min_sqlite_version_3_34_1"]
+min_sqlite_version_3_34_1 = []
+bundled = []
+bundled-windows = []
+bundled_bindings = []
+bundled-sqlcipher = []
+bundled-sqlcipher-vendored-openssl = []
+buildtime_bindgen = []
+column_metadata = []
+in_gecko = []
+loadable_extension = []
+preupdate_hook = []
+session = []
+sqlcipher = []
+unlock_notify = []
+wasm32-wasi-vfs = []
+with-asan = []

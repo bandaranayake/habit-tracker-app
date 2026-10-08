@@ -142,6 +142,7 @@ Deleted at the end: `src/main/`, `src/preload/`, `electron.vite.config.ts`, `ele
 4. **Webview differences.** The app moves from Chromium to WebView2, WKWebView and WebKitGTK. Watch `<input type="color"|"date">`, scrollbar styling and `backdrop-filter` on WebKitGTK. A Ctrl+R reload in a release build reloads the UI to the lock screen, while the backend stays unlocked. Re-unlocking just replaces the connection, so this is harmless.
 5. **Blocking work on the main thread.** PBKDF2 (100k) plus SQLCipher's KDF (256k) take ~100s of ms. The auth commands must be `async` so they don't run on the main thread.
 6. **No GUI test available to the lead.** Gates prove compile, lint and unit tests only. The manual smoke checklist is below.
+7. **Patched `libsqlite3-sys` must track rusqlite.** `src-tauri/sqlite3mc-sys/` replaces crates.io `libsqlite3-sys` through `[patch.crates-io]`. It has the same name, version (0.38.2) and `links = "sqlite3"`, plus bindings copied from upstream (MIT). When rusqlite is bumped to a new `libsqlite3-sys` version, the patch silently stops applying, and the build falls back to plain SQLite with **no encryption**. Guard: the `engine_is_sqlite3mc_with_sqlcipher_cipher` test fails in that case. Upgrade by bumping the version and re-copying `bindgen_bundled_version.rs` and `error.rs` from the matching upstream release.
 
 ### Manual smoke checklist (for the user after the migration)
 

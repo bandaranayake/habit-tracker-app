@@ -19,7 +19,7 @@ Gates: the frontend gates (typecheck, eslint check, prettier --check, frontend b
 
   (deps: T02) - done when: all four cargo gates and the frontend gates pass, and the capability and conf pass the lead's least-privilege review.
 
-- [ ] T04 [rust] `src/error.rs`, `src/db.rs`:
+- [x] T04 [rust] `src/error.rs`, `src/db.rs`:
   - `AppError` exactly as in the contract (`Locked`, `Database`, `Io`, serialized as `{kind, message}`).
   - `rusqlite` linked against SQLite3 Multiple Ciphers built from `sqlite3mc-src` (MIGRATION.md Decision 5). The open sequence starts with `PRAGMA cipher = 'sqlcipher'`.
   - Managed state `Db(Mutex<Option<Connection>>)`.

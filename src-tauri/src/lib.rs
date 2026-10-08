@@ -1,5 +1,9 @@
+pub mod db;
+pub mod error;
+
 pub fn run() {
     if let Err(err) = tauri::Builder::default()
+        .manage(db::Db::default())
         .invoke_handler(tauri::generate_handler![])
         .run(tauri::generate_context!())
     {
