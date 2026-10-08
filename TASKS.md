@@ -21,14 +21,14 @@ Gates: the frontend gates (typecheck, eslint check, prettier --check, frontend b
 
 - [ ] T04 [rust] `src/error.rs`, `src/db.rs`:
   - `AppError` exactly as in the contract (`Locked`, `Database`, `Io`, serialized as `{kind, message}`).
-  - `rusqlite` with feature `bundled-sqlcipher-vendored-openssl`.
+  - `rusqlite` linked against SQLite3 Multiple Ciphers built from `sqlite3mc-src` (MIGRATION.md Decision 5). The open sequence starts with `PRAGMA cipher = 'sqlcipher'`.
   - Managed state `Db(Mutex<Option<Connection>>)`.
   - The open sequence (`PRAGMA key` with quote escaping, `foreign_keys = ON`, the `sqlite_master` check).
   - The verbatim schema init with the column backfill and the `sort_order` backfill, plus `rekey`.
   - No commands yet.
   - Unit tests on a temp-dir DB: create + reopen with the right key works, the wrong key fails, rekey then reopen with the new key works and the old key fails, and the schema init is idempotent.
 
-  If OpenSSL fails to build on Windows, see MIGRATION.md Risk 1 (Strawberry Perl / `OPENSSL_SRC_PERL`). (deps: T03) - done when: the cargo gates pass and the tests listed are present and green.
+  Attempt 1 failed: the vendored OpenSSL build needs a native perl. The engine is now switched. (deps: T03) - done when: the cargo gates pass and the tests listed are present and green.
 
 - [ ] T05 [rust] `src/auth.rs`:
   - The data dir (`config_dir()/habit-tracker-app[-dev]`, created if missing).

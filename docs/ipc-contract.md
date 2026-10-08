@@ -84,7 +84,7 @@ These commands **never reject for expected failures**. They resolve with `DbResu
 Shared constants: `KDF_ITERATIONS = 100_000`, `KDF_KEY_LENGTH = 32`, `SALT_LENGTH = 32`, `MIN_PASSWORD_LENGTH = 8` (counted in **UTF-16 code units** like JS `length`, i.e. `password.encode_utf16().count()`).
 `derive_key(password, salt) = base64_standard_padded(pbkdf2_hmac_sha256(password_utf8, salt, 100_000, 32))`.
 Files: `<data_dir>/.salt` (raw 32 bytes) and `<data_dir>/database.sqlite`, where `data_dir = config_dir()/habit-tracker-app` (release) or `config_dir()/habit-tracker-app-dev` (debug). Create the directory if it's missing.
-Opening a connection: `PRAGMA key = '<derived base64>'` (no single quote is possible in base64; still escape `'` → `''`), then `PRAGMA foreign_keys = ON`, then `SELECT 1 FROM sqlite_master LIMIT 1` (errors on a wrong key).
+Opening a connection (the SQLite engine is SQLite3 Multiple Ciphers, the same as Electron's `better-sqlite3-multiple-ciphers`): `PRAGMA cipher = 'sqlcipher'` (must come before the key; the SQLite3MC default cipher is ChaCha20, not SQLCipher), then `PRAGMA key = '<derived base64>'` (no single quote is possible in base64; still escape `'` → `''`), then `PRAGMA foreign_keys = ON`, then `SELECT 1 FROM sqlite_master LIMIT 1` (errors on a wrong key).
 
 **`create_database`**, checked in this order:
 
@@ -159,3 +159,4 @@ None. The Electron app sends no main → renderer messages.
 ## Changelog
 
 - 2026-10-08: initial contract from the Electron preload bridge (19 commands, 0 events). Affects T03–T09.
+- 2026-10-08: the DB engine switched from SQLCipher (vendored OpenSSL) to SQLite3 Multiple Ciphers, and the opening sequence now sets `PRAGMA cipher = 'sqlcipher'` before the key, exactly like Electron. Reason: the vendored OpenSSL build needs a Windows-native perl that isn't available (T04, first attempt). Affects T04–T06.
