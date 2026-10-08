@@ -67,7 +67,7 @@ Gates: the frontend gates (typecheck, eslint check, prettier --check, frontend b
   (deps: T03) - done when: the cargo gates pass and `capabilities/main.json` still has no opener, fs, shell or http permission.
 
 - [x] T08 [frontend] Create `src/renderer/src/lib/native.ts`: the only module importing `@tauri-apps/*`. Export `habitAPI` with the same 19 method names and positional signatures as `src/preload/index.d.ts`. Each method calls `invoke('<snake_case>', { camelCaseArgs })` per the contract. Also export the `DbResult`, `AppError` and `AppErrorKind` types. Don't change call sites yet. (deps: T01) - done when: the frontend gates pass and every command name and arg key matches the contract (the lead diffs them).
-- [ ] T09 [frontend] Migrate every `window.habitAPI` call site to `import { habitAPI } from '@/lib/native'`:
+- [x] T09 [frontend] Migrate every `window.habitAPI` call site to `import { habitAPI } from '@/lib/native'`:
   - `components/LockScreen.tsx`, `components/SettingsView.tsx`, `context/SettingsContext.tsx` and `AuthenticatedApp.tsx`.
   - Drop the `if (window.habitAPI)` guard.
   - The `catch` branches in LockScreen and SettingsView must handle a rejected non-`Error` `AppError` (use `.message` if present).

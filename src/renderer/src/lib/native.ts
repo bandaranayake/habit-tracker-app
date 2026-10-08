@@ -16,6 +16,12 @@ export interface AppError {
   message: string
 }
 
+/** Message from a thrown `Error` or a rejected `AppError`, else `fallback`. */
+export const errorMessage = (err: unknown, fallback: string): string => {
+  const message = (err as { message?: unknown } | null | undefined)?.message
+  return typeof message === 'string' ? message : fallback
+}
+
 export const habitAPI = {
   getAllHabits: (): Promise<Habit[]> => invoke<Habit[]>('get_all_habits'),
   getAllHabitLogs: (): Promise<HabitLog[]> => invoke<HabitLog[]>('get_all_habit_logs'),
