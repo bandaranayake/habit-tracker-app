@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSettings } from '@/context/SettingsContext'
 import { DATE_FORMAT_OPTIONS, FIRST_DAY_OF_WEEK_OPTIONS, THEME_OPTIONS } from '@/utils/constant'
+import { errorMessage, habitAPI } from '@/lib/native'
 
 const MIN_PASSWORD_LENGTH = 8
 
@@ -40,7 +41,7 @@ export const SettingsView = ({ onBack }: SettingsViewProps): JSX.Element => {
 
     try {
       setChangingPassword(true)
-      const { success, error } = await window.habitAPI.changePassword(currentPassword, newPassword)
+      const { success, error } = await habitAPI.changePassword(currentPassword, newPassword)
       if (success) {
         setPasswordSuccess(true)
         setCurrentPassword('')
@@ -50,7 +51,7 @@ export const SettingsView = ({ onBack }: SettingsViewProps): JSX.Element => {
         setPasswordError(error ?? 'Failed to change password')
       }
     } catch (err: unknown) {
-      setPasswordError(err instanceof Error ? err.message : 'Failed to change password')
+      setPasswordError(errorMessage(err, 'Failed to change password'))
     } finally {
       setChangingPassword(false)
     }

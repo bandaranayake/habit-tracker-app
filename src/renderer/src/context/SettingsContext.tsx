@@ -15,6 +15,7 @@ import {
   SETTINGS_KEYS,
   ThemePreference
 } from '@/utils/constant'
+import { habitAPI } from '@/lib/native'
 
 interface SettingsContextValue {
   theme: ThemePreference
@@ -54,7 +55,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }): JSX.Ele
 
   useEffect(() => {
     let cancelled = false
-    window.habitAPI
+    habitAPI
       .getAllSettings()
       .then((all) => {
         if (cancelled) return
@@ -88,21 +89,19 @@ export const SettingsProvider = ({ children }: { children: ReactNode }): JSX.Ele
 
   const setTheme = useCallback((next: ThemePreference) => {
     setThemeState(next)
-    window.habitAPI.setSetting(SETTINGS_KEYS.theme, next).catch((error) => console.error(error))
+    habitAPI.setSetting(SETTINGS_KEYS.theme, next).catch((error) => console.error(error))
   }, [])
 
   const setFirstDayOfWeek = useCallback((next: number) => {
     setFirstDayOfWeekState(next)
-    window.habitAPI
+    habitAPI
       .setSetting(SETTINGS_KEYS.firstDayOfWeek, String(next))
       .catch((error) => console.error(error))
   }, [])
 
   const setDateFormat = useCallback((next: DateFormatPreference) => {
     setDateFormatState(next)
-    window.habitAPI
-      .setSetting(SETTINGS_KEYS.dateFormat, next)
-      .catch((error) => console.error(error))
+    habitAPI.setSetting(SETTINGS_KEYS.dateFormat, next).catch((error) => console.error(error))
   }, [])
 
   const value = useMemo<SettingsContextValue>(

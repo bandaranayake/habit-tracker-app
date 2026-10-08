@@ -29,6 +29,7 @@ import { StatsView } from '@/components/StatsView'
 import BarChart from './components/chart/chart-bar-interactive'
 import { ChartData } from './types/chartData'
 import { useSettings } from '@/context/SettingsContext'
+import { habitAPI } from '@/lib/native'
 
 /** How long the "Habit deleted" undo prompt stays before the delete is committed. */
 const DELETE_UNDO_MS = 6000
@@ -88,8 +89,8 @@ function AuthenticatedApp(): JSX.Element {
     setLoadError(null)
     try {
       const [loadedHabits, loadedLogs] = await Promise.all([
-        window.habitAPI.getAllHabits(),
-        window.habitAPI.getAllHabitLogs()
+        habitAPI.getAllHabits(),
+        habitAPI.getAllHabitLogs()
       ])
 
       // Reconcile the denormalized caches against the source-of-truth logs and
@@ -99,12 +100,7 @@ function AuthenticatedApp(): JSX.Element {
         reconciled.map((h) => {
           const original = loadedHabits.find((o) => o.id === h.id)
           if (original && statsChanged(original, h)) {
-            return window.habitAPI.updateHabit(
-              h.id,
-              h.current_streak,
-              h.longest_streak,
-              h.completion_rate
-            )
+            return habitAPI.updateHabit(h.id, h.current_streak, h.longest_streak, h.completion_rate)
           }
           return undefined
         })
@@ -121,9 +117,7 @@ function AuthenticatedApp(): JSX.Element {
   }, [firstDayOfWeek])
 
   useEffect(() => {
-    if (window.habitAPI) {
-      loadHabits()
-    }
+    loadHabits()
   }, [loadHabits])
 
   useEffect(() => {
@@ -143,7 +137,7 @@ function AuthenticatedApp(): JSX.Element {
     const habitName = newHabitName.trim()
     if (!habitName) return
 
-    window.habitAPI
+    habitAPI
       .addHabit(habitName, HABIT_COLORS[activeHabits.length % HABIT_COLORS.length])
       .then(() => loadHabits())
       .then(() => setNewHabitName(''))
@@ -151,7 +145,7 @@ function AuthenticatedApp(): JSX.Element {
   }
 
   const commitDelete = (habitId: number): void => {
-    window.habitAPI.removeHabit(habitId).catch((error) => {
+    habitAPI.removeHabit(habitId).catch((error) => {
       console.error(error)
       loadHabits()
     })
@@ -204,7 +198,7 @@ function AuthenticatedApp(): JSX.Element {
 
   const archiveHabit = (habitId: number): void => {
     setHabits((prev) => prev.map((h) => (h.id === habitId ? { ...h, status: HABIT_ARCHIVED } : h)))
-    window.habitAPI.archiveHabit(habitId).catch((error) => {
+    habitAPI.archiveHabit(habitId).catch((error) => {
       console.error(error)
       loadHabits()
     })
@@ -212,7 +206,7 @@ function AuthenticatedApp(): JSX.Element {
 
   const unarchiveHabit = (habitId: number): void => {
     setHabits((prev) => prev.map((h) => (h.id === habitId ? { ...h, status: HABIT_ACTIVE } : h)))
-    window.habitAPI.unarchiveHabit(habitId).catch((error) => {
+    habitAPI.unarchiveHabit(habitId).catch((error) => {
       console.error(error)
       loadHabits()
     })
@@ -241,7 +235,7 @@ function AuthenticatedApp(): JSX.Element {
     setDraggingId(null)
     const orderedIds = habits.map((h) => h.id)
     setHabits((prev) => prev.map((h, index) => ({ ...h, sort_order: index })))
-    window.habitAPI.reorderHabits(orderedIds).catch((error) => {
+    habitAPI.reorderHabits(orderedIds).catch((error) => {
       console.error(error)
       loadHabits()
     })
@@ -249,7 +243,7 @@ function AuthenticatedApp(): JSX.Element {
 
   const setHabitWeight = (habitId: number, weight: number): void => {
     setHabits((prev) => prev.map((h) => (h.id === habitId ? { ...h, weight } : h)))
-    window.habitAPI.setHabitWeight(habitId, weight).catch((error) => {
+    habitAPI.setHabitWeight(habitId, weight).catch((error) => {
       console.error(error)
       loadHabits()
     })
@@ -265,7 +259,7 @@ function AuthenticatedApp(): JSX.Element {
           : h
       )
     )
-    window.habitAPI.setHabitTarget(habitId, targetPerWeek).catch((error) => {
+    habitAPI.setHabitTarget(habitId, targetPerWeek).catch((error) => {
       console.error(error)
       loadHabits()
     })
@@ -273,7 +267,7 @@ function AuthenticatedApp(): JSX.Element {
 
   const editHabit = (habitId: number, name: string, color: string): void => {
     setHabits((prev) => prev.map((h) => (h.id === habitId ? { ...h, name, color } : h)))
-    window.habitAPI.updateHabitDetails(habitId, name, color).catch((error) => {
+    habitAPI.updateHabitDetails(habitId, name, color).catch((error) => {
       console.error(error)
       loadHabits()
     })
@@ -303,11 +297,9 @@ function AuthenticatedApp(): JSX.Element {
     const longestStreak = getLongestStreak(updatedRecords, habit.target_per_week, firstDayOfWeek)
     const completionRate = calculateCompletionRate(updatedRecords)
 
-    window.habitAPI
+    habitAPI
       .updateHabitLog(habitId, date, state)
-      .then(() =>
-        window.habitAPI.updateHabit(habitId, currentStreak, longestStreak, completionRate)
-      )
+      .then(() => habitAPI.updateHabit(habitId, currentStreak, longestStreak, completionRate))
       .then(() => {
         setRecords((prev) => [
           ...prev.filter((record) => record.habit_id !== habitId),

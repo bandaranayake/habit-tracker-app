@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from './ui/input'
+import { errorMessage, habitAPI } from '@/lib/native'
 
 interface LockScreenProps {
   onUnlock: () => void
@@ -18,8 +19,8 @@ const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
 
   React.useEffect(() => {
     ;(async (): Promise<void> => {
-      const saltExists = await window.habitAPI.saltExists()
-      const dbExists = await window.habitAPI.dbExists()
+      const saltExists = await habitAPI.saltExists()
+      const dbExists = await habitAPI.dbExists()
 
       if (dbExists && saltExists) {
         setMode('unlock')
@@ -44,7 +45,7 @@ const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
 
     try {
       setLoading(true)
-      const { success, error } = await window.habitAPI.createDatabase(password)
+      const { success, error } = await habitAPI.createDatabase(password)
 
       if (success) {
         setError('')
@@ -53,7 +54,7 @@ const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
         setError(error ?? 'Failed to create database')
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to create database')
+      setError(errorMessage(err, 'Failed to create database'))
     } finally {
       setLoading(false)
     }
@@ -69,7 +70,7 @@ const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
 
     try {
       setLoading(true)
-      const { success, error } = await window.habitAPI.unlockDatabase(password)
+      const { success, error } = await habitAPI.unlockDatabase(password)
 
       if (success) {
         setError('')
@@ -78,7 +79,7 @@ const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
         setError(error ?? 'Failed to open database')
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to open database')
+      setError(errorMessage(err, 'Failed to open database'))
     } finally {
       setLoading(false)
     }
